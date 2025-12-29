@@ -1,0 +1,29 @@
+[
+  { "id": "mon-ai-1", "subjectId": "AI", "dayOfWeek": 0, "startTime": "10:00", "durationMinutes": 60, "room": "CR-606" },
+  { "id": "mon-fm", "subjectId": "FM", "dayOfWeek": 0, "startTime": "11:00", "durationMinutes": 120, "room": "CR-606" },
+  { "id": "mon-ba-lab", "subjectId": "BA", "dayOfWeek": 0, "startTime": "14:00", "durationMinutes": 120, "room": "LAB-CC-803" },
+  { "id": "mon-cap", "subjectId": "CAP", "dayOfWeek": 0, "startTime": "16:00", "durationMinutes": 120, "room": "Capstone" },
+
+  { "id": "tue-atsa", "subjectId": "ATSA", "dayOfWeek": 1, "startTime": "09:00", "durationMinutes": 60, "room": "CR-704" },
+  { "id": "tue-gai", "subjectId": "GAI", "dayOfWeek": 1, "startTime": "10:00", "durationMinutes": 60, "room": "CR-704" },
+  { "id": "tue-ism", "subjectId": "LSCM", "dayOfWeek": 1, "startTime": "11:00", "durationMinutes": 120, "room": "CR-704" },
+  { "id": "tue-cap", "subjectId": "CAP", "dayOfWeek": 1, "startTime": "16:00", "durationMinutes": 120, "room": "Capstone" },
+
+  { "id": "wed-lscm", "subjectId": "LSCM", "dayOfWeek": 2, "startTime": "09:00", "durationMinutes": 120, "room": "CR-606" },
+  { "id": "wed-ob", "subjectId": "OB", "dayOfWeek": 2, "startTime": "11:00", "durationMinutes": 120, "room": "CR-606" },
+  { "id": "wed-psb", "subjectId": "PSB", "dayOfWeek": 2, "startTime": "14:00", "durationMinutes": 120, "room": "CR-606" },
+  { "id": "wed-cap", "subjectId": "CAP", "dayOfWeek": 2, "startTime": "16:00", "durationMinutes": 120, "room": "Capstone" },
+
+  { "id": "thu-gai", "subjectId": "GAI", "dayOfWeek": 3, "startTime": "10:00", "durationMinutes": 60, "room": "CR-608" },
+  { "id": "thu-brm", "subjectId": "B2B", "dayOfWeek": 3, "startTime": "11:00", "durationMinutes": 120, "room": "CR-608" },
+  { "id": "thu-b2b", "subjectId": "B2B", "dayOfWeek": 3, "startTime": "14:00", "durationMinutes": 120, "room": "CR-606" },
+  { "id": "thu-cap", "subjectId": "CAP", "dayOfWeek": 3, "startTime": "16:00", "durationMinutes": 120, "room": "Capstone" },
+
+  { "id": "fri-ba", "subjectId": "BA", "dayOfWeek": 4, "startTime": "09:00", "durationMinutes": 60, "room": "LAB-CC-803" },
+  { "id": "fri-fm", "subjectId": "FM", "dayOfWeek": 4, "startTime": "10:00", "durationMinutes": 60, "room": "CR-604" },
+  { "id": "fri-gai-lab", "subjectId": "GAI", "dayOfWeek": 4, "startTime": "11:00", "durationMinutes": 120, "room": "LAB-CC-803" },
+  { "id": "fri-atsa-lab", "subjectId": "ATSA", "dayOfWeek": 4, "startTime": "14:00", "durationMinutes": 120, "room": "LAB-CI-705" },
+  { "id": "fri-cap", "subjectId": "CAP", "dayOfWeek": 4, "startTime": "16:00", "durationMinutes": 120, "room": "Capstone" },
+
+  { "id": "sat-cccl", "subjectId": "CCCL", "dayOfWeek": 5, "startTime": "11:00", "durationMinutes": 120, "room": "CR-605" }
+]

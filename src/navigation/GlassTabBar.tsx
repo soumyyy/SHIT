@@ -18,10 +18,10 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   container: {
-    borderRadius: 32,
+    borderRadius: 24,
     backgroundColor: colors.glass,
     borderWidth: 1,
     borderColor: colors.glassBorder,
@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     elevation: 0,
     shadowOpacity: 0,
-    height: 72,
+    height: 60,
     paddingHorizontal: spacing.lg,
   },
 });

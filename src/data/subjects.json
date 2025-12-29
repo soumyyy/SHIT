@@ -1,13 +1,14 @@
 [
-  { "id": "AI", "name": "Artificial Intelligence" },
-  { "id": "ATSA", "name": "Advanced Topics in Statistical Analysis" },
-  { "id": "GAI", "name": "Generative AI" },
-  { "id": "FM", "name": "Financial Management" },
-  { "id": "LSCM", "name": "Logistics & Supply Chain Management" },
-  { "id": "OB", "name": "Organizational Behaviour" },
-  { "id": "BA", "name": "Business Analytics" },
-  { "id": "PSB", "name": "Principles of Strategic Business" },
+  { "id": "ATSA", "name": "ATSA" },
+  { "id": "ATSA-PR", "name": "ATSA Practical" },
+  { "id": "GAI", "name": "GAI" },
+  { "id": "GAI-PR", "name": "GAI Practical" },
+  { "id": "FM", "name": "FM" },
+  { "id": "BA", "name": "BA" },
+  { "id": "ISM", "name": "ISM" },
+  { "id": "OB", "name": "OB" },
+  { "id": "PSB", "name": "PSB" },
+  { "id": "VRM", "name": "VRM" },
   { "id": "B2B", "name": "B2B Marketing" },
-  { "id": "CCCL", "name": "Cross Cultural Corporate Leadership" },
-  { "id": "CAP", "name": "Capstone Project" }
+  { "id": "CCCL", "name": "CCCL" }
 ]

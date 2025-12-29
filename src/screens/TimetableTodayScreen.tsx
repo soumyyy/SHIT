@@ -1,32 +1,15 @@
 import { useMemo } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { LectureCard } from "@/components/LectureCard";
-import { colors, layout, radii, shadows, spacing, typography } from "@/constants/theme";
+import { colors, layout, spacing, typography } from "@/constants/theme";
 import { formatTimeRange, getDayLabel, getTodayDayOfWeek } from "@/data/helpers";
 import { mockSlots, mockSubjects } from "@/data/mockData";
 import { TimetableStackParamList } from "@/navigation/types";
 
 type Props = NativeStackScreenProps<TimetableStackParamList, "TimetableToday">;
-
-const formatStartLabel = (time: string) => {
-  const [h, m] = time.split(":").map(Number);
-  const date = new Date();
-  date.setHours(h, m, 0, 0);
-
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-};
 
 export const TimetableTodayScreen = ({ navigation }: Props) => {
   const dayOfWeek = getTodayDayOfWeek();
@@ -44,40 +27,25 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
     [dayOfWeek],
   );
 
-  const nextLecture = todaysSlots[0];
-  const nextSubject = nextLecture ? subjectsById.get(nextLecture.subjectId) : undefined;
-
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.backdrop} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroCard}>
-          <View style={styles.heroHeader}>
-            <View>
-              <Text style={styles.heroLabel}>{getDayLabel(dayOfWeek)}</Text>
-              <Text style={styles.heroTitle}>Your day at a glance</Text>
-            </View>
-            <Text style={styles.heroCount}>
-              {todaysSlots.length}
-              <Text style={styles.heroCountLabel}> slots</Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.dayLabel}>{getDayLabel(dayOfWeek)}</Text>
+            <Text style={styles.slotCount}>
+              {todaysSlots.length} slot{todaysSlots.length === 1 ? "" : "s"}
             </Text>
           </View>
-          <Text style={styles.heroSubtitle}>
-            {nextLecture
-              ? `Next: ${nextSubject?.name ?? "Lecture"} at ${formatStartLabel(
-                  nextLecture.startTime,
-                )}`
-              : "No lectures scheduled today."}
-          </Text>
           <Pressable
+            style={styles.compactButton}
             onPress={() => navigation.navigate("FullTimetable")}
-            style={styles.heroButton}
           >
-            <Text style={styles.heroButtonText}>View full timetable</Text>
+            <Text style={styles.compactButtonText}>Full timetable</Text>
           </Pressable>
         </View>
 
@@ -101,7 +69,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
                   navigation.navigate("SubjectOverview", { subjectId: slot.subjectId })
                 }
                 onLongPress={() => {
-                  // Attendance modal will be implemented later.
+                  // TODO: open attendance modal
                 }}
                 rightElement={
                   <View style={styles.quickAction}>
@@ -122,83 +90,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 220,
-    backgroundColor: colors.backgroundSecondary,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-  },
   container: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: spacing.xxl,
+    paddingHorizontal: layout.screenPadding - spacing.sm,
+    paddingBottom: spacing.xl,
+    paddingTop: spacing.md,
   },
-  heroCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    ...shadows.medium,
-  },
-  heroHeader: {
+  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: spacing.md,
-    marginBottom: spacing.sm,
+    alignItems: "center",
+    marginBottom: spacing.lg,
   },
-  heroLabel: {
+  dayLabel: {
     color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 1,
     fontSize: typography.tiny,
     fontWeight: "700",
   },
-  heroTitle: {
+  slotCount: {
     color: colors.textPrimary,
-    fontSize: typography.display,
-    fontWeight: "800",
-  },
-  heroCount: {
-    color: colors.accent,
-    fontSize: typography.display,
-    fontWeight: "800",
-  },
-  heroCountLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    fontWeight: "600",
-  },
-  heroSubtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.body,
-    marginBottom: spacing.lg,
-  },
-  heroButton: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.pill,
-  },
-  heroButtonText: {
-    color: "#FFF2E0",
+    fontSize: typography.heading,
     fontWeight: "700",
+  },
+  compactButton: {
+    borderRadius: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.glass,
+  },
+  compactButtonText: {
+    color: colors.accent,
     fontSize: typography.small,
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
   sectionHeader: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
     color: colors.textPrimary,
@@ -217,7 +150,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    borderRadius: radii.pill,
+    borderRadius: spacing.md,
     borderWidth: 1,
     borderColor: colors.glassBorder,
   },

@@ -9,16 +9,22 @@ const DAY_INDEXES = [0, 1, 2, 3, 4, 5];
 const START_HOUR = 9;
 const END_HOUR = 18; // exclusive
 const HOUR_BLOCKS = END_HOUR - START_HOUR;
+const ROW_HEIGHT = 40;
 
 interface TimetableGridProps {
   slots: TimetableSlot[];
   subjects: Subject[];
 }
 
-type SlotCell = {
-  slot: TimetableSlot;
-  isStart: boolean;
-};
+type DayBlock =
+  | { type: "gap"; span: number }
+  | { type: "slot"; span: number; slot: TimetableSlot };
+
+const hourLabels = Array.from({ length: HOUR_BLOCKS }).map((_, idx) => {
+  const start = START_HOUR + idx;
+  const end = start + 1;
+  return `${start}–${end}`;
+});
 
 export const TimetableGrid = ({ slots, subjects }: TimetableGridProps) => {
   const subjectMap = useMemo(
@@ -26,39 +32,43 @@ export const TimetableGrid = ({ slots, subjects }: TimetableGridProps) => {
     [subjects],
   );
 
-  const cellsByDay = useMemo(() => {
-    const map = new Map<number, Array<SlotCell | null>>();
-    DAY_INDEXES.forEach((day) => {
-      map.set(day, Array<SlotCell | null>(HOUR_BLOCKS).fill(null));
-    });
-
-    DAY_INDEXES.forEach((day) => {
-      const cells = map.get(day);
-      if (!cells) return;
-      const daySlots = slots
+  const dayColumns = useMemo(() => {
+    return DAY_INDEXES.map((day) => {
+      const sorted = slots
         .filter((slot) => slot.dayOfWeek === day)
         .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-      daySlots.forEach((slot) => {
+      const blocks: DayBlock[] = [];
+      let cursor = START_HOUR;
+
+      sorted.forEach((slot) => {
         const [startHour] = slot.startTime.split(":").map(Number);
-        const startIndex = Math.max(0, Math.min(HOUR_BLOCKS - 1, Math.floor(startHour - START_HOUR)));
+        const normalizedStart = Math.max(START_HOUR, Math.min(END_HOUR, startHour));
+
+        if (normalizedStart > cursor) {
+          blocks.push({ type: "gap", span: normalizedStart - cursor });
+        }
+
         const span = Math.max(1, Math.ceil(slot.durationMinutes / 60));
-        for (let i = 0; i < span; i++) {
-          const idx = startIndex + i;
-          if (idx >= 0 && idx < HOUR_BLOCKS) {
-            cells[idx] = { slot, isStart: i === 0 };
-          }
+        const clampedSpan = Math.min(span, END_HOUR - normalizedStart);
+        if (clampedSpan > 0) {
+          blocks.push({ type: "slot", span: clampedSpan, slot });
+          cursor = normalizedStart + clampedSpan;
         }
       });
-    });
 
-    return map;
+      if (cursor < END_HOUR) {
+        blocks.push({ type: "gap", span: END_HOUR - cursor });
+      }
+
+      return { day, blocks };
+    });
   }, [slots]);
 
   return (
     <View style={styles.wrapper}>
       <View style={styles.rotated}>
-        <View style={styles.gridCard}>
+        <View style={styles.card}>
           <View style={styles.headerRow}>
             <View style={styles.timeHeader}>
               <Text style={styles.timeHeaderLabel}>Time</Text>
@@ -69,43 +79,38 @@ export const TimetableGrid = ({ slots, subjects }: TimetableGridProps) => {
               </Text>
             ))}
           </View>
+
           <View style={styles.body}>
-            {Array.from({ length: HOUR_BLOCKS }).map((_, rowIndex) => {
-              const start = START_HOUR + rowIndex;
-              const end = start + 1;
-              return (
-                <View key={rowIndex} style={styles.row}>
-                  <View style={styles.timeCell}>
-                    <Text style={styles.timeLabel}>
-                      {start}
-                      <Text style={styles.timeLabelSuffix}>–{end}</Text>
-                    </Text>
-                  </View>
-                  {DAY_INDEXES.map((day) => {
-                  const cell = cellsByDay.get(day)?.[rowIndex] ?? null;
-                  return (
-                    <View
-                      key={`${day}-${rowIndex}`}
-                      style={[
-                        styles.cell,
-                        cell && styles.cellFilled,
-                        cell && !cell.isStart && styles.cellContinuation,
-                      ]}
-                    >
-                      {cell?.isStart ? (
-                        <>
-                          <Text style={styles.subjectCode}>
-                            {subjectMap.get(cell.slot.subjectId)?.id ?? cell.slot.subjectId}
-                          </Text>
-                          <Text style={styles.room}>{cell.slot.room}</Text>
-                        </>
-                      ) : null}
-                    </View>
-                  );
-                })}
+            <View style={styles.timeColumn}>
+              {hourLabels.map((label) => (
+                <View key={label} style={styles.timeRow}>
+                  <Text style={styles.timeLabel}>{label}</Text>
                 </View>
-              );
-            })}
+              ))}
+            </View>
+
+            {dayColumns.map(({ day, blocks }) => (
+              <View key={day} style={styles.dayColumn}>
+                {blocks.map((block, index) =>
+                  block.type === "gap" ? (
+                    <View
+                      key={`${day}-gap-${index}`}
+                      style={[styles.gapBlock, { height: ROW_HEIGHT * block.span }]}
+                    />
+                  ) : (
+                    <View
+                      key={`${day}-${block.slot.id}-${index}`}
+                      style={[styles.slotBlock, { height: ROW_HEIGHT * block.span }]}
+                    >
+                      <Text style={styles.subjectCode}>
+                        {subjectMap.get(block.slot.subjectId)?.id ?? block.slot.subjectId}
+                      </Text>
+                      <Text style={styles.room}>{block.slot.room}</Text>
+                    </View>
+                  ),
+                )}
+              </View>
+            ))}
           </View>
         </View>
       </View>
@@ -121,9 +126,9 @@ const styles = StyleSheet.create({
   rotated: {
     transform: [{ rotate: "90deg" }],
   },
-  gridCard: {
-    width: 620,
-    height: 420,
+  card: {
+    width: 640,
+    height: 460,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -131,8 +136,14 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     ...shadows.medium,
   },
+  headerRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+    alignItems: "center",
+  },
   timeHeader: {
-    width: 70,
+    width: 64,
   },
   timeHeaderLabel: {
     color: colors.textMuted,
@@ -142,65 +153,61 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   dayLabel: {
+    flex: 1,
     color: colors.textPrimary,
     fontSize: typography.small,
     fontWeight: "700",
-    flex: 1,
     textAlign: "center",
   },
-  headerRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
   body: {
-    flex: 1,
+    flexDirection: "row",
     borderRadius: radii.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
-    backgroundColor: colors.backgroundSecondary,
     overflow: "hidden",
+    backgroundColor: colors.backgroundSecondary,
   },
-  row: {
-    flexDirection: "row",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderStrong,
-  },
-  timeCell: {
-    width: 70,
-    justifyContent: "center",
-    alignItems: "center",
+  timeColumn: {
+    width: 64,
     borderRightWidth: StyleSheet.hairlineWidth,
     borderRightColor: colors.borderStrong,
     backgroundColor: colors.background,
+  },
+  timeRow: {
+    height: ROW_HEIGHT,
+    justifyContent: "center",
+    alignItems: "center",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderStrong,
   },
   timeLabel: {
     color: colors.textMuted,
     fontSize: typography.tiny,
     fontWeight: "600",
   },
-  timeLabelSuffix: {
-    fontSize: typography.tiny,
-  },
-  cell: {
+  dayColumn: {
     flex: 1,
     borderRightWidth: StyleSheet.hairlineWidth,
     borderRightColor: colors.borderStrong,
     backgroundColor: colors.cardMuted,
+  },
+  gapBlock: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderStrong,
+  },
+  slotBlock: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderStrong,
+    backgroundColor: colors.card,
     justifyContent: "center",
     alignItems: "center",
-    minHeight: 42,
-  },
-  cellFilled: {
-    backgroundColor: colors.card,
-  },
-  cellContinuation: {
-    borderTopWidth: 0,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
   subjectCode: {
     color: colors.textPrimary,
     fontWeight: "800",
-    fontSize: typography.body,
+    fontSize: typography.small,
   },
   room: {
     color: colors.textSecondary,

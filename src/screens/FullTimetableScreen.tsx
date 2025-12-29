@@ -26,7 +26,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingTop: spacing.xl * 2,
+    paddingTop: spacing.xl * 4,
     paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
   },
 });

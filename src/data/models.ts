@@ -4,7 +4,6 @@ export interface Subject {
   id: string;
   name: string;
   professor?: string;
-  defaultRoom?: string;
   createdAt: string;
 }
 

@@ -9,7 +9,6 @@ type SubjectSeed = {
   id: string;
   name: string;
   professor?: string;
-  defaultRoom?: string;
 };
 
 type SlotSeed = {
@@ -44,7 +43,6 @@ export const mockSubjects: Subject[] = (subjectsSeed as SubjectSeed[]).map((subj
   id: subject.id,
   name: subject.name,
   professor: subject.professor,
-  defaultRoom: subject.defaultRoom,
   createdAt: now,
 }));
 

@@ -223,7 +223,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
                 key={slot.id}
                 title={subject?.id ?? "Subject"}
                 subtitle={formatTimeRange(slot.startTime, slot.durationMinutes)}
-                room={slot.room || subject?.defaultRoom}
+                room={slot.room}
                 status={attendanceStatus ?? null}
                 onPress={() =>
                   navigation.navigate("SubjectOverview", { subjectId: slot.subjectId })

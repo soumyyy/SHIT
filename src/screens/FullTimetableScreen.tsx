@@ -13,7 +13,6 @@ export const FullTimetableScreen = () => {
 
   const [subjectCode, setSubjectCode] = useState("");
   const [subjectName, setSubjectName] = useState("");
-  const [subjectRoom, setSubjectRoom] = useState("");
 
   const [slotSubjectId, setSlotSubjectId] = useState(subjects[0]?.id ?? "");
   const [slotDay, setSlotDay] = useState(0);
@@ -34,10 +33,9 @@ export const FullTimetableScreen = () => {
 
   const handleAddSubject = async () => {
     try {
-      await addSubject({ id: subjectCode, name: subjectName, defaultRoom: subjectRoom });
+      await addSubject({ id: subjectCode, name: subjectName });
       setSubjectCode("");
       setSubjectName("");
-      setSubjectRoom("");
       Alert.alert("Saved", "Subject added.");
     } catch (error) {
       Alert.alert("Error", (error as Error).message);

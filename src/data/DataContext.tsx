@@ -10,7 +10,6 @@ interface AddSubjectPayload {
   id: string;
   name: string;
   professor?: string;
-  defaultRoom?: string;
 }
 
 interface AddSlotPayload {
@@ -41,6 +40,8 @@ interface DataContextValue {
   updateSettings: (settings: Partial<Settings>) => Promise<void>;
   addSlotOverride: (override: Omit<SlotOverride, "id">) => Promise<void>;
   importData: (subjects: Subject[], slots: TimetableSlot[]) => Promise<void>;
+  updateSubject: (subject: Subject) => Promise<void>;
+  deleteSubject: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -163,7 +164,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const addSubject = useCallback(
-    async ({ id, name, professor, defaultRoom }: AddSubjectPayload) => {
+    async ({ id, name, professor }: AddSubjectPayload) => {
       const normalizedId = id.trim().toUpperCase();
       const normalizedName = name.trim();
 
@@ -178,7 +179,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         id: normalizedId,
         name: normalizedName,
         professor: professor?.trim(),
-        defaultRoom: defaultRoom?.trim(),
         createdAt: new Date().toISOString(),
       };
 
@@ -241,6 +241,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     await persistSlots(newSlots);
   }, [persistSubjects, persistSlots]);
 
+  const updateSubject = useCallback(async (updatedSubject: Subject) => {
+    const next = subjects.map((s) => (s.id === updatedSubject.id ? updatedSubject : s));
+    await persistSubjects(next);
+  }, [persistSubjects, subjects]);
+
+  const deleteSubject = useCallback(async (id: string) => {
+    const next = subjects.filter(s => s.id !== id);
+    await persistSubjects(next);
+  }, [persistSubjects, subjects]);
+
   const value = useMemo<DataContextValue>(
     () => ({
       subjects,
@@ -255,6 +265,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       updateSettings,
       addSlotOverride,
       importData,
+      updateSubject,
+      deleteSubject,
       refresh: load,
     }),
     [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load],

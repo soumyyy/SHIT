@@ -7,7 +7,8 @@ import { SubjectRow } from "@/components/SubjectRow";
 import { colors, layout, spacing, typography } from "@/constants/theme";
 import { useData } from "@/data/DataContext";
 import { useTabSwipe } from "@/hooks/useTabSwipe";
-import { useAttendanceStats } from "@/hooks/useAttendanceStats";
+import { computeAttendance, projectSemesterCount } from "@/data/attendance";
+import { calculateSemesterEndDate } from "@/data/helpers";
 import { AttendanceStackParamList } from "@/navigation/types";
 
 type AttendanceScreenProps = NativeStackScreenProps<AttendanceStackParamList, "AttendanceList">;
@@ -18,13 +19,20 @@ export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
 
   const subjectData = useMemo(() => {
     return subjects.map(subject => {
-      const { stats, safeToMiss } = useAttendanceStats({
-        subjectId: subject.id,
-        attendanceLogs,
+      const stats = computeAttendance(attendanceLogs, subject.id, settings.minAttendanceThreshold);
+
+      const totalProjected = projectSemesterCount(
+        subject.id,
         slots,
         slotOverrides,
-        settings,
-      });
+        settings.semesterStartDate,
+        calculateSemesterEndDate(settings.semesterStartDate, settings.semesterWeeks)
+      );
+
+      const minRequired = Math.ceil(totalProjected * settings.minAttendanceThreshold);
+      const maxMissable = totalProjected - minRequired;
+      const alreadyMissed = stats.total - stats.present;
+      const safeToMiss = maxMissable - alreadyMissed;
 
       return {
         subject,

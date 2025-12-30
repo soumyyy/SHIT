@@ -20,7 +20,7 @@ export const EditableSubjectRow = ({ id, name, professor, onPress }: EditableSub
 
                 <View style={styles.infoColumn}>
                     <Text style={styles.title} numberOfLines={1}>{name}</Text>
-                    <Text style={styles.professor} numberOfLines={1}>{professor || "Dr. Professor Name"}</Text>
+                    <Text style={styles.professor} numberOfLines={1}>{professor || "Professor"}</Text>
                 </View>
 
                 <View style={styles.actionColumn}>

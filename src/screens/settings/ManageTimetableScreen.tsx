@@ -11,35 +11,49 @@ import {
     KeyboardAvoidingView,
     Platform,
     FlatList,
+    Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { colors, layout, radii, spacing, typography } from "@/constants/theme";
 import { TimetableStackParamList } from "@/navigation/types";
 import { useData } from "@/data/DataContext";
 import { SubjectFormModal } from "@/components/SubjectFormModal";
+import { SlotFormModal } from "@/components/SlotFormModal";
 import { EditableSubjectRow } from "@/components/EditableSubjectRow";
-import { Subject } from "@/data/models";
+import { SlotRow } from "@/components/SlotRow";
+import { Subject, TimetableSlot } from "@/data/models";
+import { STORAGE_KEYS } from "@/storage/keys";
+import { useSubjectMap } from "@/hooks/useSubjectMap";
 
 type Props = NativeStackScreenProps<TimetableStackParamList, "ManageTimetable">;
 
 export const ManageTimetableScreen = ({ navigation }: Props) => {
-    const { subjects, slots, importData, addSubject, updateSubject, deleteSubject, attendanceLogs, slotOverrides, settings } = useData();
+    const { subjects, slots, importData, addSubject, updateSubject, deleteSubject, updateSlot, deleteSlot, attendanceLogs, slotOverrides, settings, refresh } = useData();
+    const subjectsById = useSubjectMap(subjects);
 
     const [slotsJson, setSlotsJson] = useState("");
     const [subjectsJson, setSubjectsJson] = useState("");
-    const [activeTab, setActiveTab] = useState<"subjects" | "slots">("subjects");
+    const [attendanceJson, setAttendanceJson] = useState("");
+    const [activeTab, setActiveTab] = useState<"subjects" | "slots" | "attendance">("subjects");
     const [subjectEditMode, setSubjectEditMode] = useState<"visual" | "json">("visual");
+    const [slotEditMode, setSlotEditMode] = useState<"visual" | "json">("visual");
+    const [attendanceEditable, setAttendanceEditable] = useState(false);
+    const [lastTapTime, setLastTapTime] = useState(0);
     const [subjectModalVisible, setSubjectModalVisible] = useState(false);
+    const [slotModalVisible, setSlotModalVisible] = useState(false);
     const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+    const [editingSlot, setEditingSlot] = useState<TimetableSlot | null>(null);
 
     useEffect(() => {
         setSubjectsJson(JSON.stringify(subjects, null, 2));
         setSlotsJson(JSON.stringify(slots, null, 2));
-    }, [subjects, slots]);
+        setAttendanceJson(JSON.stringify(attendanceLogs, null, 2));
+    }, [subjects, slots, attendanceLogs]);
 
     const handleSaveSlots = async () => {
         try {
@@ -66,6 +80,41 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
         } catch (error) {
             Alert.alert("Invalid JSON", (error as Error).message);
         }
+    };
+
+    const handleSaveAttendance = async () => {
+        try {
+            console.log("Parsing attendance JSON...");
+            const parsedAttendance = JSON.parse(attendanceJson);
+            if (!Array.isArray(parsedAttendance)) {
+                throw new Error("Attendance logs must be an array: [ ... ]");
+            }
+            console.log("Parsed attendance:", parsedAttendance.length, "logs");
+            // Directly save attendance logs to storage
+            await AsyncStorage.setItem(STORAGE_KEYS.attendance, JSON.stringify(parsedAttendance));
+            console.log("Saved to AsyncStorage");
+            // Reload data from storage to update UI immediately
+            await refresh();
+            console.log("Refreshed data");
+            Alert.alert("Success", "Attendance logs updated!");
+            setAttendanceEditable(false);
+        } catch (error) {
+            console.error("Error saving attendance:", error);
+            Alert.alert("Invalid JSON", (error as Error).message);
+        }
+    };
+
+    const handleAttendanceTap = () => {
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300;
+
+        if (now - lastTapTime < DOUBLE_TAP_DELAY) {
+            setAttendanceEditable(true);
+            Alert.alert("Edit Mode", "Attendance JSON is now editable. Be careful!");
+        } else {
+            setActiveTab("attendance");
+        }
+        setLastTapTime(now);
     };
 
     const handleAddSubject = () => {
@@ -122,6 +171,39 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
         }
     };
 
+    const handleAddSlot = () => {
+        setEditingSlot(null);
+        setSlotModalVisible(true);
+    };
+
+    const handleEditSlot = (slot: TimetableSlot) => {
+        setEditingSlot(slot);
+        setSlotModalVisible(true);
+    };
+
+    const handleSaveSlot = async (slotData: Omit<TimetableSlot, "id" | "createdAt" | "updatedAt">) => {
+        try {
+            if (editingSlot) {
+                const updatedSlot: TimetableSlot = {
+                    ...editingSlot,
+                    ...slotData,
+                    updatedAt: new Date().toISOString(),
+                };
+                await updateSlot(updatedSlot);
+            } else {
+                const newSlot = {
+                    ...slotData,
+                    id: Date.now().toString(),
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                };
+                await importData(subjects, [...slots, newSlot]);
+            }
+        } catch (error) {
+            Alert.alert("Error", (error as Error).message);
+        }
+    };
+
 
 
     const renderSubjectItem = ({ item }: { item: Subject }) => (
@@ -149,6 +231,14 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
                             onPress={() => setActiveTab("slots")}
                         >
                             <Text style={[styles.tabText, activeTab === "slots" && styles.activeTabText]}>Timetable Slots</Text>
+                        </Pressable>
+                        <Pressable
+                            style={[styles.tab, activeTab === "attendance" && styles.activeTab]}
+                            onPress={handleAttendanceTap}
+                        >
+                            <Text style={[styles.tabText, activeTab === "attendance" && styles.activeTabText]}>
+                                Attendance{attendanceEditable && " 🔓"}
+                            </Text>
                         </Pressable>
                     </View>
                 </View>
@@ -188,8 +278,14 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
                                 }
                             />
                         ) : (
-                            <View style={styles.editorContainer}>
-                                <Text style={styles.hintText}>Edit subjects using JSON format.</Text>
+                            <ScrollView
+                                style={styles.editorContainer}
+                                keyboardShouldPersistTaps="handled"
+                                showsVerticalScrollIndicator={false}
+                            >
+                                <Pressable onPress={Keyboard.dismiss}>
+                                    <Text style={styles.hintText}>Edit subjects using JSON format.</Text>
+                                </Pressable>
                                 <TextInput
                                     style={styles.input}
                                     multiline
@@ -200,30 +296,119 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
                                     placeholder="Paste Subjects JSON here..."
                                     placeholderTextColor={colors.textMuted}
                                 />
-                            </View>
+                            </ScrollView>
                         )}
                     </View>
+                ) : activeTab === "attendance" ? (
+                    <View style={styles.container}>
+                        <View style={styles.subjectsHeader}>
+                            <Text style={styles.countText}>{attendanceLogs.length} Attendance Logs</Text>
+                        </View>
+                        <ScrollView
+                            style={styles.editorContainer}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <Pressable onPress={Keyboard.dismiss}>
+                                <Text style={styles.hintText}>Attendance logs (read-only)</Text>
+                            </Pressable>
+                            <TextInput
+                                style={styles.input}
+                                multiline
+                                value={attendanceJson}
+                                onChangeText={setAttendanceJson}
+                                editable={attendanceEditable}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                placeholderTextColor={colors.textMuted}
+                            />
+                        </ScrollView>
+                    </View>
                 ) : (
-                    <View style={styles.editorContainer}>
-                        <Text style={styles.hintText}>Edit timetable slots using JSON format.</Text>
-                        <TextInput
-                            style={styles.input}
-                            multiline
-                            value={slotsJson}
-                            onChangeText={setSlotsJson}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            placeholder="Paste Slots JSON here..."
-                            placeholderTextColor={colors.textMuted}
-                        />
+                    <View style={styles.container}>
+                        <View style={styles.subjectsHeader}>
+                            <Text style={styles.countText}>{slots.length} Slots</Text>
+                            <View style={styles.subjectsHeaderActions}>
+                                <Pressable
+                                    style={[styles.miniButton, slotEditMode === "json" && styles.miniButtonActive]}
+                                    onPress={() => setSlotEditMode(m => m === "visual" ? "json" : "visual")}
+                                >
+                                    <Ionicons name="code-slash" size={16} color={slotEditMode === "json" ? colors.background : colors.textSecondary} />
+                                </Pressable>
+                                <Pressable style={styles.addButton} onPress={handleAddSlot}>
+                                    <Ionicons name="add" size={20} color={colors.background} />
+                                    <Text style={styles.addButtonText}>Add Slot</Text>
+                                </Pressable>
+                            </View>
+                        </View>
+
+                        {slotEditMode === "visual" ? (
+                            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
+                                {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((dayName, dayIndex) => {
+                                    const daySlots = slots
+                                        .filter(slot => slot.dayOfWeek === dayIndex)
+                                        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+                                    if (daySlots.length === 0) return null;
+
+                                    return (
+                                        <View key={dayIndex} style={styles.daySection}>
+                                            <View style={styles.daySectionHeader}>
+                                                <Text style={styles.daySectionTitle}>{dayName}</Text>
+                                                <Text style={styles.daySectionCount}>({daySlots.length})</Text>
+                                            </View>
+                                            {daySlots.map(slot => {
+                                                const subject = subjectsById[slot.subjectId];
+                                                if (!subject) return null;
+                                                return (
+                                                    <SlotRow
+                                                        key={slot.id}
+                                                        slot={slot}
+                                                        subject={subject}
+                                                        onPress={() => handleEditSlot(slot)}
+                                                    />
+                                                );
+                                            })}
+                                        </View>
+                                    );
+                                })}
+                                {slots.length === 0 && (
+                                    <View style={styles.emptyContainer}>
+                                        <Text style={styles.emptyText}>No slots yet.</Text>
+                                    </View>
+                                )}
+                            </ScrollView>
+                        ) : (
+                            <ScrollView
+                                style={styles.editorContainer}
+                                keyboardShouldPersistTaps="handled"
+                                showsVerticalScrollIndicator={false}
+                            >
+                                <Pressable onPress={Keyboard.dismiss}>
+                                    <Text style={styles.hintText}>Edit timetable slots using JSON format.</Text>
+                                </Pressable>
+                                <TextInput
+                                    style={styles.input}
+                                    multiline
+                                    value={slotsJson}
+                                    onChangeText={setSlotsJson}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    placeholder="Paste Slots JSON here..."
+                                    placeholderTextColor={colors.textMuted}
+                                />
+                            </ScrollView>
+                        )}
                     </View>
                 )}
 
                 <View style={styles.footer}>
-                    {(activeTab === "slots" || (activeTab === "subjects" && subjectEditMode === "json")) && (
-                        <Pressable style={styles.saveButton} onPress={activeTab === "subjects" ? handleSaveSubjects : handleSaveSlots}>
+                    {((activeTab === "slots" && slotEditMode === "json") || (activeTab === "subjects" && subjectEditMode === "json") || (activeTab === "attendance" && attendanceEditable)) && (
+                        <Pressable
+                            style={styles.saveButton}
+                            onPress={activeTab === "subjects" ? handleSaveSubjects : activeTab === "attendance" ? handleSaveAttendance : handleSaveSlots}
+                        >
                             <Text style={styles.saveButtonText}>
-                                {activeTab === "subjects" ? "Save Subjects" : "Save Slots"}
+                                {activeTab === "subjects" ? "Save Subjects" : activeTab === "attendance" ? "Save Attendance" : "Save Slots"}
                             </Text>
                         </Pressable>
                     )}
@@ -236,6 +421,16 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
                 onClose={() => setSubjectModalVisible(false)}
                 onSave={handleSaveSubject}
                 onDelete={deleteSubject}
+            />
+
+            <SlotFormModal
+                visible={slotModalVisible}
+                slot={editingSlot}
+                subjects={subjects}
+                allSlots={slots}
+                onClose={() => setSlotModalVisible(false)}
+                onSave={handleSaveSlot}
+                onDelete={deleteSlot}
             />
         </SafeAreaView>
     );
@@ -406,6 +601,7 @@ const styles = StyleSheet.create({
     footer: {
         paddingVertical: spacing.md,
         paddingHorizontal: layout.screenPadding,
+        paddingBottom: 80, // Extra padding to appear above tab bar
         flexDirection: "row",
         gap: spacing.md,
         borderTopWidth: 1,
@@ -424,6 +620,25 @@ const styles = StyleSheet.create({
         color: colors.background,
         fontWeight: "700",
         fontSize: typography.body,
+    },
+    daySection: {
+        marginBottom: spacing.lg,
+    },
+    daySectionHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.xs,
+        marginBottom: spacing.sm,
+    },
+    daySectionTitle: {
+        fontSize: typography.subheading,
+        fontWeight: "700",
+        color: colors.textPrimary,
+    },
+    daySectionCount: {
+        fontSize: typography.small,
+        fontWeight: "600",
+        color: colors.textMuted,
     },
 });
 

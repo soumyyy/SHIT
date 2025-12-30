@@ -43,6 +43,8 @@ interface DataContextValue {
   importData: (subjects: Subject[], slots: TimetableSlot[]) => Promise<void>;
   updateSubject: (subject: Subject) => Promise<void>;
   deleteSubject: (id: string) => Promise<void>;
+  updateSlot: (slot: TimetableSlot) => Promise<void>;
+  deleteSlot: (id: string) => Promise<void>;
   unmarkAttendance: (slotId: string, date?: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -259,6 +261,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     await persistSubjects(next);
   }, [persistSubjects, subjects]);
 
+  const updateSlot = useCallback(async (updatedSlot: TimetableSlot) => {
+    const next = slots.map((s) => (s.id === updatedSlot.id ? updatedSlot : s));
+    await persistSlots(next);
+  }, [persistSlots, slots]);
+
+  const deleteSlot = useCallback(async (id: string) => {
+    const next = slots.filter(s => s.id !== id);
+    await persistSlots(next);
+  }, [persistSlots, slots]);
+
   const value = useMemo<DataContextValue>(
     () => ({
       subjects,
@@ -275,6 +287,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       importData,
       updateSubject,
       deleteSubject,
+      updateSlot,
+      deleteSlot,
       unmarkAttendance,
       refresh: load,
     }),

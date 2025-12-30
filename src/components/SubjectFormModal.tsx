@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, KeyboardAvoidingView } from "react-native";
+import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, KeyboardAvoidingView } from "react-native";
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { Subject } from "@/data/models";
 
@@ -41,6 +41,7 @@ export const SubjectFormModal = ({
 
     const handleSave = () => {
         if (!id.trim() || !name.trim()) {
+            Alert.alert("Missing Fields", "Please fill in both Subject Code and Subject Name.");
             return; // Basic validation
         }
 

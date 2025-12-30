@@ -48,17 +48,21 @@ export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
   }, [subjects, attendanceLogs, slots, slotOverrides, settings]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["bottom", "left", "right"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom", "left", "right"]}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         {...swipeHandlers}
       >
-        <Text style={styles.sectionTitle}>Attendance Status</Text>
-        <Text style={styles.sectionSubtitle}>
-          {/* Safe to miss counts are based on projected semester schedule. */}
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>Attendance</Text>
+            <Text style={styles.headerSubtitle}>
+              {subjectData.length} subject{subjectData.length !== 1 ? "s" : ""}
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.list}>
           {subjectData.map(({ subject, stats, safeToMiss }) => (
@@ -94,21 +98,26 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.xl,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
   },
-  sectionTitle: {
+  headerRow: {
+    marginBottom: spacing.md,
+  },
+  headerInfo: {
+    gap: spacing.xs / 2,
+  },
+  headerTitle: {
     color: colors.textPrimary,
     fontSize: typography.heading,
     fontWeight: "800",
   },
-  sectionSubtitle: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    marginBottom: spacing.lg,
-    fontSize: typography.body,
+  headerSubtitle: {
+    color: colors.textMuted,
+    fontSize: typography.small,
+    fontWeight: "600",
   },
   list: {
-    gap: spacing.xs, // Reduced gap as cards have padding
+    gap: spacing.xs,
   },
   emptyText: {
     color: colors.textMuted,

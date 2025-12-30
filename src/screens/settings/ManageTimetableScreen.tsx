@@ -14,6 +14,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 
 import { colors, layout, radii, spacing, typography } from "@/constants/theme";
 import { TimetableStackParamList } from "@/navigation/types";
@@ -24,7 +26,7 @@ import { Subject } from "@/data/models";
 type Props = NativeStackScreenProps<TimetableStackParamList, "ManageTimetable">;
 
 export const ManageTimetableScreen = ({ navigation }: Props) => {
-    const { subjects, slots, importData, addSubject, updateSubject, deleteSubject } = useData();
+    const { subjects, slots, importData, addSubject, updateSubject, deleteSubject, attendanceLogs, slotOverrides, settings } = useData();
 
     const [slotsJson, setSlotsJson] = useState("");
     const [subjectsJson, setSubjectsJson] = useState("");
@@ -87,6 +89,38 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
         }
     };
 
+    const handleExportData = async () => {
+        try {
+            const exportData = {
+                subjects,
+                slots,
+                attendanceLogs,
+                slotOverrides,
+                settings,
+                exportedAt: new Date().toISOString(),
+            };
+
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const fileName = `attendance-backup-${new Date().toISOString().split('T')[0]}.json`;
+            const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+
+            await FileSystem.writeAsStringAsync(fileUri, jsonString);
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(fileUri, {
+                    mimeType: 'application/json',
+                    dialogTitle: 'Save Attendance Data',
+                    UTI: 'public.json',
+                });
+                Alert.alert("Success", "Data exported successfully!");
+            } else {
+                Alert.alert("Error", "Sharing is not available on this device");
+            }
+        } catch (error) {
+            Alert.alert("Export Failed", (error as Error).message);
+        }
+    };
+
 
 
     const renderSubjectItem = ({ item }: { item: Subject }) => (
@@ -138,6 +172,9 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
                                     onPress={() => setSubjectEditMode(m => m === "visual" ? "json" : "visual")}
                                 >
                                     <Ionicons name="code-slash" size={16} color={subjectEditMode === "json" ? colors.background : colors.textSecondary} />
+                                </Pressable>
+                                <Pressable style={styles.miniButton} onPress={handleExportData}>
+                                    <Ionicons name="download-outline" size={16} color={colors.textSecondary} />
                                 </Pressable>
                                 <Pressable style={styles.addButton} onPress={handleAddSubject}>
                                     <Ionicons name="add" size={20} color={colors.background} />

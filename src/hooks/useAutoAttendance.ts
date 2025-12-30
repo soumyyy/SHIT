@@ -1,0 +1,81 @@
+import { useEffect } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
+import { getEffectiveSlots, calculateSemesterEndDate } from '@/data/helpers';
+import { useData } from '@/data/DataContext';
+
+/**
+ * Auto-mark lectures as "present" if 6 hours have passed since they ended
+ * and no attendance log exists for them.
+ */
+export const useAutoAttendance = () => {
+    const { slots, slotOverrides, attendanceLogs, settings, markAttendance } = useData();
+
+    const autoMarkPresentLectures = async () => {
+        const now = new Date();
+        const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        const semesterEnd = calculateSemesterEndDate(settings.semesterStartDate, settings.semesterWeeks);
+        const endDate = new Date(semesterEnd);
+
+        // Iterate through the last 7 days
+        const currentDate = new Date(sevenDaysAgo);
+        currentDate.setHours(0, 0, 0, 0);
+
+        while (currentDate <= now && currentDate <= endDate) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+
+            // Get all slots for this day
+            const daySlots = getEffectiveSlots(dateStr, slots, slotOverrides);
+
+            for (const slot of daySlots) {
+                // Calculate when this lecture ended
+                const [hours, minutes] = slot.startTime.split(':').map(Number);
+                const lectureEnd = new Date(dateStr);
+                lectureEnd.setHours(hours, minutes + slot.durationMinutes, 0, 0);
+
+                // Check if 6 hours have passed since lecture ended
+                if (lectureEnd < sixHoursAgo) {
+                    // Check if attendance log already exists
+                    const existingLog = attendanceLogs.find(
+                        log => log.date === dateStr && log.slotId === slot.id && log.subjectId === slot.subjectId
+                    );
+
+                    // If no log exists, auto-mark as present
+                    if (!existingLog) {
+                        try {
+                            await markAttendance({
+                                slotId: slot.id,
+                                subjectId: slot.subjectId,
+                                status: 'present',
+                                date: dateStr,
+                            });
+                        } catch (error) {
+                            console.error('Failed to auto-mark attendance:', error);
+                        }
+                    }
+                }
+            }
+
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+    };
+
+    // Run on mount
+    useEffect(() => {
+        autoMarkPresentLectures();
+    }, []);
+
+    // Run when app comes to foreground
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+            if (nextAppState === 'active') {
+                autoMarkPresentLectures();
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [slots, slotOverrides, attendanceLogs, settings]);
+};

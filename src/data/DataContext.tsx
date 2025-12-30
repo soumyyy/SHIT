@@ -271,7 +271,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       deleteSubject,
       refresh: load,
     }),
-    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load, subjects, slots],
+    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load, updateSubject, deleteSubject],
   );
 
   if (loading) {

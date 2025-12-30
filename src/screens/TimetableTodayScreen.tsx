@@ -165,7 +165,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
                 {formatDateLabel(selectedDate)}
               </Text>
               <Text style={styles.slotCount}>
-                {isBeforeSemester ? 0 : todaysSlots.length} slot{(isBeforeSemester || todaysSlots.length !== 1) ? "s" : ""}
+                {isBeforeSemester ? 0 : todaysSlots.length} hour{(isBeforeSemester || todaysSlots.length !== 1) ? "s" : ""}
               </Text>
             </View>
             <Pressable style={styles.navButton} onPress={goToNextDay}>

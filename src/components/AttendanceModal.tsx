@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { formatTimeRange } from "@/data/helpers";
@@ -54,7 +55,7 @@ export const AttendanceModal = ({
             </View>
             {onEdit && (
               <Pressable style={styles.editButton} onPress={onEdit}>
-                <Text style={styles.editIcon}>✏️</Text>
+                <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
               </Pressable>
             )}
           </View>
@@ -121,9 +122,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: spacing.sm,
-  },
-  editIcon: {
-    fontSize: 18,
   },
   title: {
     color: colors.textPrimary,

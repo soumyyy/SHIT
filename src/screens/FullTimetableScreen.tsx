@@ -64,7 +64,7 @@ export const FullTimetableScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}

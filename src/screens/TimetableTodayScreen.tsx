@@ -147,7 +147,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
     : undefined;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom", "left", "right"]}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -161,10 +161,10 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
             </Pressable>
             <View style={styles.dateInfo}>
               <Text style={styles.dayLabel}>
-                {getDayLabel(dayOfWeek)} • {formatDateLabel(selectedDate)}
+                {formatDateLabel(selectedDate)}
               </Text>
               <Text style={styles.slotCount}>
-                {todaysSlots.length} slot{todaysSlots.length === 1 ? "" : "s"}
+                {isBeforeSemester ? 0 : todaysSlots.length} slot{(isBeforeSemester || todaysSlots.length !== 1) ? "s" : ""}
               </Text>
             </View>
             <Pressable style={styles.navButton} onPress={goToNextDay}>

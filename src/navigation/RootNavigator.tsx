@@ -7,15 +7,17 @@ import { colors } from "@/constants/theme";
 import { AttendanceScreen } from "@/screens/AttendanceScreen";
 import { FullTimetableScreen } from "@/screens/FullTimetableScreen";
 import { SubjectOverviewScreen } from "@/screens/SubjectOverviewScreen";
+import { SubjectAttendanceScreen } from "@/screens/SubjectAttendanceScreen";
 import { TimetableTodayScreen } from "@/screens/TimetableTodayScreen";
 
 import { GlassTabBar } from "./GlassTabBar";
-import { RootTabParamList, TimetableStackParamList } from "./types";
+import { AttendanceStackParamList, RootTabParamList, TimetableStackParamList } from "./types";
 
 enableScreens();
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const TimetableStack = createNativeStackNavigator<TimetableStackParamList>();
+const AttendanceStack = createNativeStackNavigator<AttendanceStackParamList>();
 
 const navigationTheme = {
   ...DefaultTheme,
@@ -57,7 +59,27 @@ const TimetableStackNavigator = () => (
   </TimetableStack.Navigator>
 );
 
-
+const AttendanceStackNavigator = () => (
+  <AttendanceStack.Navigator
+    screenOptions={{
+      headerStyle: { backgroundColor: colors.background },
+      headerTitleStyle: { color: colors.textPrimary },
+      headerTintColor: colors.textPrimary,
+      contentStyle: { backgroundColor: colors.background },
+    }}
+  >
+    <AttendanceStack.Screen
+      name="AttendanceList"
+      component={AttendanceScreen}
+      options={{ headerShown: false }}
+    />
+    <AttendanceStack.Screen
+      name="SubjectAttendance"
+      component={SubjectAttendanceScreen}
+      options={{ title: "Attendance Details" }}
+    />
+  </AttendanceStack.Navigator>
+);
 
 export const RootNavigator = () => (
   <NavigationContainer theme={navigationTheme}>
@@ -77,7 +99,7 @@ export const RootNavigator = () => (
       />
       <Tab.Screen
         name="AttendanceTab"
-        component={AttendanceScreen}
+        component={AttendanceStackNavigator}
         options={{
           tabBarLabel: "Attendance",
         }}

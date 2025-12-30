@@ -73,7 +73,7 @@ export const SubjectOverviewScreen = ({ route }: Props) => {
   const totalHoursPerWeek = totalMinutesPerWeek / 60;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom", "left", "right"]}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -88,9 +88,9 @@ export const SubjectOverviewScreen = ({ route }: Props) => {
               </Text>
             </View>
           </View>
-          <Text style={styles.professor}>
+          {/* <Text style={styles.professor}>
             {stats.present} / {stats.total} classes attended
-          </Text>
+          </Text> */}
           <Text style={styles.hoursPerWeek}>
             {totalHoursPerWeek % 1 === 0
               ? totalHoursPerWeek.toFixed(0)
@@ -253,4 +253,56 @@ const styles = StyleSheet.create({
   },
   textSuccess: { color: colors.success },
   textDanger: { color: colors.danger },
+  textMuted: { color: colors.textMuted },
+
+  // History Styles
+  historyList: {
+    backgroundColor: colors.card,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    padding: spacing.sm,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  historyLeft: {
+    gap: 2,
+  },
+  historyDate: {
+    color: colors.textPrimary,
+    fontWeight: '600',
+    fontSize: typography.body,
+  },
+  historyTime: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+  },
+  statusBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  statusPresent: {
+    backgroundColor: colors.success + '15',
+  },
+  statusAbsent: {
+    backgroundColor: colors.danger + '15',
+  },
+  statusCancelled: {
+    backgroundColor: colors.surface, // neutral
+  },
+  statusText: {
+    fontSize: typography.tiny,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
 });

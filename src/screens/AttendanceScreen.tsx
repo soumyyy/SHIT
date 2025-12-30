@@ -1,48 +1,53 @@
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { SubjectRow } from "@/components/SubjectRow";
-import { colors, layout, radii, shadows, spacing, typography } from "@/constants/theme";
-import { computeAttendance } from "@/data/attendance";
+import { colors, layout, spacing, typography } from "@/constants/theme";
+import { computeAttendance, projectSemesterCount } from "@/data/attendance";
 import { useData } from "@/data/DataContext";
 import { useTabSwipe } from "@/hooks/useTabSwipe";
-import { RootTabParamList } from "@/navigation/types";
+import { AttendanceStackParamList } from "@/navigation/types";
 
-const MIN_ATTENDANCE = 0.8;
-
-type AttendanceScreenProps = BottomTabScreenProps<RootTabParamList, "AttendanceTab">;
+type AttendanceScreenProps = NativeStackScreenProps<AttendanceStackParamList, "AttendanceList">;
 
 export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
-  const { subjects, attendanceLogs } = useData();
-  const swipeHandlers = useTabSwipe(navigation, "AttendanceTab");
+  const { subjects, attendanceLogs, slots, slotOverrides, settings } = useData();
+  // Cast navigation to any for swipe handler which expects tab nav structure compatibility
+  const swipeHandlers = useTabSwipe(navigation as any, "AttendanceTab");
 
-  const statsBySubject = useMemo(() => {
-    const entries = subjects.map((subject) => [
-      subject.id,
-      computeAttendance(attendanceLogs, subject.id, MIN_ATTENDANCE),
-    ]);
-    return Object.fromEntries(entries);
-  }, [attendanceLogs, subjects]);
+  const subjectData = useMemo(() => {
+    return subjects.map(subject => {
+      const stats = computeAttendance(attendanceLogs, subject.id, settings.minAttendanceThreshold);
 
-  const orderedSubjects = [...subjects].sort(
-    (a, b) => statsBySubject[a.id].percentage - statsBySubject[b.id].percentage,
-  );
+      const projectedTotal = projectSemesterCount(
+        subject.id,
+        slots,
+        slotOverrides,
+        settings.semesterStartDate,
+        settings.semesterEndDate || ""
+      );
 
-  const aggregate = orderedSubjects.reduce(
-    (acc, subject) => {
-      const stats = statsBySubject[subject.id];
-      acc.present += stats.present;
-      acc.total += stats.total;
-      acc.lowCount += stats.isBelowThreshold ? 1 : 0;
-      return acc;
-    },
-    { present: 0, total: 0, lowCount: 0 },
-  );
+      // Max classes one can miss and still be >= threshold
+      // Formula: (Total - AllowedMisses) / Total >= Threshold
+      // Total - AllowedMisses >= Total * Threshold
+      // AllowedMisses <= Total * (1 - Threshold)
+      const maxMissable = Math.floor(projectedTotal * (1 - settings.minAttendanceThreshold));
 
-  const overallPercentage =
-    aggregate.total === 0 ? 100 : (aggregate.present / aggregate.total) * 100;
+      // Missed so far = Logged - Present
+      const missedStrict = stats.total - stats.present;
+
+      const safeToMiss = maxMissable - missedStrict;
+
+      return {
+        subject,
+        stats,
+        projectedTotal,
+        safeToMiss
+      };
+    }).sort((a, b) => a.stats.percentage - b.stats.percentage);
+  }, [subjects, attendanceLogs, slots, slotOverrides, settings]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -52,51 +57,29 @@ export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
         showsVerticalScrollIndicator={false}
         {...swipeHandlers}
       >
-        <View style={styles.hero}>
-          <View>
-            <Text style={styles.heroLabel}>Attendance</Text>
-            <Text style={styles.heroTitle}>{overallPercentage.toFixed(0)}%</Text>
-            <Text style={styles.heroSubtitle}>
-              {aggregate.total === 0
-                ? "No logs yet."
-                : `${aggregate.present}/${aggregate.total} marked`}
-            </Text>
-          </View>
-          <View style={styles.heroStats}>
-            <View style={styles.heroChip}>
-              <Text style={styles.heroChipValue}>{subjects.length}</Text>
-              <Text style={styles.heroChipLabel}>Subjects</Text>
-            </View>
-            <View style={styles.heroChip}>
-              <Text style={styles.heroChipValue}>{aggregate.lowCount}</Text>
-              <Text style={styles.heroChipLabel}>Below 80%</Text>
-            </View>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>Subject wise</Text>
+        <Text style={styles.sectionTitle}>Attendance Status</Text>
         <Text style={styles.sectionSubtitle}>
-          Ordered.
+          {/* Safe to miss counts are based on projected semester schedule. */}
         </Text>
 
         <View style={styles.list}>
-          {orderedSubjects.map((subject) => {
-            const stats = statsBySubject[subject.id];
-            const subtitle =
-              stats.total === 0
-                ? "No attendance logged yet"
-                : `${stats.present}/${stats.total} present • ${stats.total - stats.present} missed`;
-            return (
-              <SubjectRow
-                key={subject.id}
-                title={subject.name}
-                subtitle={subtitle}
-                percentage={stats.percentage}
-                highlight={stats.isBelowThreshold}
-              />
-            );
-          })}
+          {subjectData.map(({ subject, stats, safeToMiss }) => (
+            <SubjectRow
+              key={subject.id}
+              title={subject.name}
+              percentage={stats.percentage}
+              present={stats.present}
+              total={stats.total}
+              safeToMiss={safeToMiss}
+              minAttendance={settings.minAttendanceThreshold}
+              onPress={() => navigation.navigate("SubjectAttendance", { subjectId: subject.id })}
+            />
+          ))}
         </View>
+
+        {subjectData.length === 0 && (
+          <Text style={styles.emptyText}>No subjects added yet.</Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -115,71 +98,23 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     paddingTop: spacing.lg,
   },
-  hero: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    ...shadows.medium,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  heroLabel: {
-    color: colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    fontWeight: "700",
-    fontSize: typography.tiny,
-  },
-  heroTitle: {
-    color: colors.accent,
-    fontSize: typography.heading,
-    fontWeight: "800",
-  },
-  heroSubtitle: {
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  heroStats: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  heroChip: {
-    backgroundColor: colors.card,
-    borderRadius: radii.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    alignItems: "center",
-    minWidth: 80,
-  },
-  heroChipValue: {
-    color: colors.textPrimary,
-    fontSize: typography.body,
-    fontWeight: "700",
-  },
-  heroChipLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.tiny,
-    marginTop: spacing.xs / 2,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
   sectionTitle: {
     color: colors.textPrimary,
     fontSize: typography.heading,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   sectionSubtitle: {
     color: colors.textSecondary,
     marginTop: spacing.xs,
     marginBottom: spacing.lg,
+    fontSize: typography.body,
   },
   list: {
-    gap: spacing.sm,
+    gap: spacing.xs, // Reduced gap as cards have padding
+  },
+  emptyText: {
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.xl,
   },
 });

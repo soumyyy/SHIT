@@ -227,7 +227,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
-    // TODO: Persist to AsyncStorage
+    await Storage.saveSettings(updated);
   }, [settings]);
 
   const addSlotOverride = useCallback(async (override: Omit<SlotOverride, "id">) => {

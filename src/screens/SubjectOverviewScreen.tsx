@@ -3,7 +3,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { DaySection } from "@/components/DaySection";
+
 import { LectureCard } from "@/components/LectureCard";
 import { colors, layout, radii, shadows, spacing, typography } from "@/constants/theme";
 import { formatTimeRange, getDayLabel } from "@/data/helpers";
@@ -122,21 +122,27 @@ export const SubjectOverviewScreen = ({ route }: Props) => {
             <Text style={styles.description}>No regular slots configured.</Text>
           ) : (
             days.map((day) => (
-              <DaySection key={day} title={getDayLabel(day)}>
-                {groupedSlots[day].map((slot) => (
-                  <LectureCard
-                    key={slot.id}
-                    title={formatTimeRange(slot.startTime, slot.durationMinutes)}
-                    subtitle={`Room ${slot.room}`}
-                  />
-                ))}
-              </DaySection>
+              <View key={day} style={styles.daySection}>
+                <View style={styles.daySectionHeader}>
+                  <Text style={styles.daySectionTitle}>{getDayLabel(day)}</Text>
+                  <View style={styles.daySectionDivider} />
+                </View>
+                <View style={styles.daySectionBody}>
+                  {groupedSlots[day].map((slot) => (
+                    <LectureCard
+                      key={slot.id}
+                      title={formatTimeRange(slot.startTime, slot.durationMinutes)}
+                      subtitle={`Room ${slot.room}`}
+                    />
+                  ))}
+                </View>
+              </View>
             ))
           )}
         </View>
 
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 };
 
@@ -304,5 +310,28 @@ const styles = StyleSheet.create({
     fontSize: typography.tiny,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  daySection: {
+    marginBottom: spacing.xl,
+  },
+  daySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  daySectionTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.subheading,
+    fontWeight: '700',
+    marginRight: spacing.md,
+  },
+  daySectionDivider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+    opacity: 0.7,
+  },
+  daySectionBody: {
+    marginTop: spacing.sm,
   },
 });

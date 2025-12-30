@@ -24,7 +24,7 @@ const formatDateLabel = (date: Date) =>
 export const TimetableTodayScreen = ({ navigation }: Props) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const dayOfWeek = getTodayDayOfWeek(currentDate);
-  const { slots, subjects, markAttendance } = useData();
+  const { slots, subjects, attendanceLogs, markAttendance } = useData();
   const swipeResponder = useTabSwipe(navigation, "TimetableTab");
 
   useEffect(() => {
@@ -71,6 +71,14 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
     }
   };
 
+  // Find existing attendance for selected slot on today's date
+  const todayDateString = currentDate.toISOString().split("T")[0];
+  const existingAttendance = selectedSlot
+    ? attendanceLogs.find(
+      (log) => log.slotId === selectedSlot.id && log.date === todayDateString
+    )
+    : undefined;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]} {...swipeResponder.panHandlers}>
       <ScrollView
@@ -97,7 +105,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Lectures</Text>
-          <Text style={styles.sectionSubtitle}>Long press to mark attendance</Text>
+          {/* <Text style={styles.sectionSubtitle}>Long press to mark attendance</Text> */}
         </View>
 
         {todaysSlots.length === 0 ? (
@@ -115,11 +123,6 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
                   navigation.navigate("SubjectOverview", { subjectId: slot.subjectId })
                 }
                 onLongPress={() => handleLongPress(slot)}
-                rightElement={
-                  <View style={styles.quickAction}>
-                    <Text style={styles.quickActionText}>Mark</Text>
-                  </View>
-                }
               />
             );
           })
@@ -129,6 +132,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
         visible={modalVisible}
         slot={selectedSlot}
         subject={selectedSlot ? subjectsById.get(selectedSlot.subjectId) : undefined}
+        existingStatus={existingAttendance?.status}
         onClose={() => {
           setModalVisible(false);
           setSelectedSlot(null);

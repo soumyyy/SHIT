@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   container: {
-    maxWidth: 400,
     width: "90%",
+    maxWidth: 400,
     borderRadius: radii.pill,
     overflow: "hidden",
     shadowColor: "rgba(0, 0, 0, 0.1)",

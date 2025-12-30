@@ -9,6 +9,7 @@ interface AttendanceModalProps {
   visible: boolean;
   slot: TimetableSlot | null;
   subject: Subject | undefined;
+  existingStatus?: AttendanceStatus;
   onClose: () => void;
   onSubmit: (status: AttendanceStatus) => Promise<void>;
 }
@@ -17,17 +18,18 @@ export const AttendanceModal = ({
   visible,
   slot,
   subject,
+  existingStatus,
   onClose,
   onSubmit,
 }: AttendanceModalProps) => {
   const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>("present");
 
-  // Reset to "present" when modal opens
+  // Use existing status if available, otherwise default to "present"
   useEffect(() => {
     if (visible) {
-      setSelectedStatus("present");
+      setSelectedStatus(existingStatus ?? "present");
     }
-  }, [visible]);
+  }, [visible, existingStatus]);
 
   if (!visible || !slot || !subject) {
     return null;

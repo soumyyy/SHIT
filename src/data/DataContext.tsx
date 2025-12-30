@@ -81,7 +81,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setSlots(normalizedSlots);
       setAttendanceLogs(normalizedAttendance);
     } catch (error) {
-      Alert.alert("Error", "Failed to load data. Please restart the app.");
+      console.error("Failed to load data:", error);
+      // If data is corrupted, reset to mock data
+      try {
+        await Storage.saveSubjects(mockSubjects);
+        await Storage.saveSlots(mockSlots);
+        await Storage.saveAttendanceLogs([]);
+        setSubjects(mockSubjects);
+        setSlots(mockSlots);
+        setAttendanceLogs([]);
+      } catch (resetError) {
+        Alert.alert("Error", "Failed to load data. Please restart the app.");
+      }
     } finally {
       setLoading(false);
     }

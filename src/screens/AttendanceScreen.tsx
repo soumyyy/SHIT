@@ -73,9 +73,9 @@ export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Subject breakdown</Text>
+        <Text style={styles.sectionTitle}>Subject wise</Text>
         <Text style={styles.sectionSubtitle}>
-          Ordered from lowest to highest so you can rescue at-risk classes first.
+          Ordered.
         </Text>
 
         <View style={styles.list}>

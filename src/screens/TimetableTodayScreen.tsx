@@ -98,21 +98,6 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
     }
   };
 
-  const handleModifyDuration = async (newDuration: number) => {
-    if (!selectedSlot) return;
-    try {
-      await addSlotOverride({
-        originalSlotId: selectedSlot.id,
-        date: selectedDateString,
-        type: "modified",
-        durationMinutes: newDuration,
-      });
-      Alert.alert("Success", `Duration updated to ${newDuration} minutes`);
-    } catch (error) {
-      Alert.alert("Error", (error as Error).message);
-    }
-  };
-
   const handleChangeDate = async (newDate: string, newTime: string) => {
     if (!selectedSlot) return;
     try {
@@ -264,7 +249,6 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
           setSelectedSlot(null);
         }}
         onCancel={handleCancelLecture}
-        onModifyDuration={handleModifyDuration}
         onChangeDate={handleChangeDate}
       />
     </SafeAreaView>

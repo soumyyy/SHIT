@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import { colors, radii, spacing, typography } from "@/constants/theme";
 import { formatTimeRange } from "@/data/helpers";
@@ -12,11 +13,10 @@ interface EditSlotModalProps {
     currentDate: string; // YYYY-MM-DD
     onClose: () => void;
     onCancel: () => Promise<void>;
-    onModifyDuration: (newDuration: number) => Promise<void>;
     onChangeDate: (newDate: string, newTime: string) => Promise<void>;
 }
 
-const DURATION_OPTIONS = [60, 120, 180]; // 1hr, 2hr, 3hr in minutes
+// const DURATION_OPTIONS = [60, 120, 180]; // 1hr, 2hr, 3hr in minutes
 
 export const EditSlotModal = ({
     visible,
@@ -25,12 +25,16 @@ export const EditSlotModal = ({
     currentDate,
     onClose,
     onCancel,
-    onModifyDuration,
     onChangeDate,
 }: EditSlotModalProps) => {
-    const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
-    const [newDate, setNewDate] = useState("");
-    const [newTime, setNewTime] = useState("");
+    const [rescheduleDate, setRescheduleDate] = useState(new Date());
+    const [rescheduleTime, setRescheduleTime] = useState(new Date());
+
+    // For Android, we need to control visibility. For iOS 14+, 'default' display shows a button.
+    // simpler to just always show the pickers inline on iOS, or manage visibility for both.
+    // Let's go with managing visibility for better control.
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
 
     if (!visible || !slot || !subject) {
         return null;
@@ -41,18 +45,34 @@ export const EditSlotModal = ({
         onClose();
     };
 
-    const handleModifyDuration = async () => {
-        if (selectedDuration) {
-            await onModifyDuration(selectedDuration);
-            onClose();
+    const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+        const currentDate = selectedDate || rescheduleDate;
+        setShowDatePicker(Platform.OS === 'ios');
+        setRescheduleDate(currentDate);
+    };
+
+    const onTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+        if (Platform.OS === 'android') {
+            setShowTimePicker(false);
         }
+        if (event.type === 'dismissed') return;
+
+        const currentTime = selectedTime || rescheduleTime;
+        currentTime.setMinutes(0, 0, 0); // Enforce hourly interval
+        setRescheduleTime(currentTime);
     };
 
     const handleChangeDate = async () => {
-        if (newDate && newTime) {
-            await onChangeDate(newDate, newTime);
-            onClose();
-        }
+        // Format YYYY-MM-DD
+        const dateStr = rescheduleDate.toISOString().split('T')[0];
+
+        // Format HH:MM
+        const hours = rescheduleTime.getHours().toString().padStart(2, '0');
+        const minutes = rescheduleTime.getMinutes().toString().padStart(2, '0');
+        const timeStr = `${hours}:${minutes}`;
+
+        await onChangeDate(dateStr, timeStr);
+        onClose();
     };
 
     return (
@@ -74,66 +94,81 @@ export const EditSlotModal = ({
                             </Pressable>
                         </View>
 
-                        {/* Modify Duration */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Modify Duration</Text>
-                            <Text style={styles.sectionSubtitle}>
-                                Current: {slot.durationMinutes} minutes
-                            </Text>
-                            <View style={styles.durationGrid}>
-                                {DURATION_OPTIONS.map((duration) => (
-                                    <Pressable
-                                        key={duration}
-                                        style={[
-                                            styles.durationOption,
-                                            selectedDuration === duration && styles.durationOptionSelected,
-                                        ]}
-                                        onPress={() => setSelectedDuration(duration)}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.durationText,
-                                                selectedDuration === duration && styles.durationTextSelected,
-                                            ]}
-                                        >
-                                            {duration / 60}hr
-                                        </Text>
-                                    </Pressable>
-                                ))}
-                            </View>
-                            {selectedDuration && (
-                                <Pressable style={styles.primaryButton} onPress={handleModifyDuration}>
-                                    <Text style={styles.primaryButtonText}>
-                                        Update to {selectedDuration / 60} hour{selectedDuration > 60 ? 's' : ''}
-                                    </Text>
-                                </Pressable>
-                            )}
-                        </View>
-
                         {/* Change Date */}
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Reschedule</Text>
-                            <Text style={styles.sectionSubtitle}>Enter new date (YYYY-MM-DD)</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={newDate}
-                                onChangeText={setNewDate}
-                                placeholder="2026-01-15"
-                                placeholderTextColor={colors.textMuted}
-                            />
-                            <Text style={styles.sectionSubtitle}>Enter new time (HH:MM)</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={newTime}
-                                onChangeText={setNewTime}
-                                placeholder="09:00"
-                                placeholderTextColor={colors.textMuted}
-                            />
-                            {newDate && newTime && (
-                                <Pressable style={styles.primaryButton} onPress={handleChangeDate}>
-                                    <Text style={styles.primaryButtonText}>Reschedule to {newDate} at {newTime}</Text>
-                                </Pressable>
+
+                            <View style={styles.pickerGroup}>
+                                <View style={styles.pickerWrapper}>
+                                    <Text style={styles.pickerLabel}>Date</Text>
+                                    {Platform.OS === 'android' ? (
+                                        <Pressable
+                                            style={styles.androidPickerButton}
+                                            onPress={() => setShowDatePicker(true)}
+                                        >
+                                            <Text style={styles.androidPickerText}>
+                                                {rescheduleDate.toLocaleDateString()}
+                                            </Text>
+                                        </Pressable>
+                                    ) : (
+                                        <DateTimePicker
+                                            testID="dateTimePicker"
+                                            value={rescheduleDate}
+                                            mode="date"
+                                            display="compact"
+                                            onChange={onDateChange}
+                                            style={styles.iosPicker}
+                                            themeVariant="light"
+                                        />
+                                    )}
+                                </View>
+
+                                <View style={styles.pickerWrapper}>
+                                    <Text style={styles.pickerLabel}>Time</Text>
+                                    {Platform.OS === 'android' ? (
+                                        <Pressable
+                                            style={styles.androidPickerButton}
+                                            onPress={() => setShowTimePicker(true)}
+                                        >
+                                            <Text style={styles.androidPickerText}>
+                                                {rescheduleTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </Text>
+                                        </Pressable>
+                                    ) : (
+                                        <DateTimePicker
+                                            testID="timePicker"
+                                            value={rescheduleTime}
+                                            mode="time"
+                                            display="compact"
+                                            onChange={onTimeChange}
+                                            style={styles.iosPicker}
+                                            themeVariant="light"
+                                        />
+                                    )}
+                                </View>
+                            </View>
+
+                            {/* Android Pickers (Hidden/Floating) */}
+                            {Platform.OS === 'android' && showDatePicker && (
+                                <DateTimePicker
+                                    value={rescheduleDate}
+                                    mode="date"
+                                    display="default"
+                                    onChange={onDateChange}
+                                />
                             )}
+                            {Platform.OS === 'android' && showTimePicker && (
+                                <DateTimePicker
+                                    value={rescheduleTime}
+                                    mode="time"
+                                    display="default"
+                                    onChange={onTimeChange}
+                                />
+                            )}
+
+                            <Pressable style={styles.primaryButton} onPress={handleChangeDate}>
+                                <Text style={styles.primaryButtonText}>Confirm Reschedule</Text>
+                            </Pressable>
                         </View>
 
                         <Pressable style={styles.closeButton} onPress={onClose}>
@@ -190,6 +225,7 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
         fontSize: typography.small,
         marginBottom: spacing.sm,
+        marginTop: spacing.sm,
     },
     durationGrid: {
         flexDirection: "row",
@@ -232,6 +268,7 @@ const styles = StyleSheet.create({
         borderRadius: radii.md,
         padding: spacing.md,
         alignItems: "center",
+        marginTop: spacing.md,
     },
     primaryButtonText: {
         color: colors.background,
@@ -265,4 +302,40 @@ const styles = StyleSheet.create({
         fontSize: typography.body,
         fontWeight: "600",
     },
+    pickerGroup: {
+        flexDirection: 'row',
+        gap: spacing.md,
+        marginBottom: spacing.md,
+    },
+    pickerWrapper: {
+        flex: 1,
+    },
+    pickerLabel: {
+        color: colors.textSecondary,
+        fontSize: typography.small,
+        marginBottom: spacing.xs,
+        fontWeight: "600",
+    },
+    androidPickerButton: {
+        backgroundColor: colors.card,
+        padding: spacing.md,
+        borderRadius: radii.md,
+        borderWidth: 1,
+        borderColor: colors.glassBorder,
+        width: '100%',
+    },
+    androidPickerText: {
+        color: colors.textPrimary,
+        fontSize: typography.body,
+    },
+    iosPicker: {
+        height: 48,
+        width: '100%',
+        backgroundColor: colors.glass,
+        borderRadius: radii.md,
+        borderWidth: 1,
+        borderColor: colors.glassBorder,
+        marginRight: -10, // Adjust for iOS internal padding
+    },
+    // picker style removed as it is replaced by iosPicker
 });

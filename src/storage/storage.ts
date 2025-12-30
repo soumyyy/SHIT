@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { STORAGE_KEYS } from "./keys";
-import { AttendanceLog, Subject, TimetableSlot } from "@/data/models";
+import { AttendanceLog, SlotOverride, Subject, TimetableSlot } from "@/data/models";
 
 type JsonValue = unknown;
 
@@ -29,6 +29,8 @@ export const Storage = {
   saveSlots: (value: JsonValue) => write(STORAGE_KEYS.slots, value),
   getAttendanceLogs: () => read<AttendanceLog[]>(STORAGE_KEYS.attendance),
   saveAttendanceLogs: (value: JsonValue) => write(STORAGE_KEYS.attendance, value),
+  getSlotOverrides: () => read<SlotOverride[]>(STORAGE_KEYS.slotOverrides),
+  saveSlotOverrides: (value: JsonValue) => write(STORAGE_KEYS.slotOverrides, value),
   getSettings: () => read(STORAGE_KEYS.settings),
   saveSettings: (value: JsonValue) => write(STORAGE_KEYS.settings, value),
   clearAll: async () => {

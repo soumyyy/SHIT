@@ -3,6 +3,7 @@ export const STORAGE_KEYS = {
   slots: "@shit/slots",
   attendance: "@shit/attendance",
   settings: "@shit/settings",
+  slotOverrides: "@shit/slotOverrides",
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

@@ -218,10 +218,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       ...override,
       id: Date.now().toString(),
     };
-    const updated = [...slotOverrides, newOverride];
-    setSlotOverrides(updated);
+    setSlotOverrides((prev) => [...prev, newOverride]);
     // TODO: Persist to AsyncStorage
-  }, [slotOverrides]);
+  }, []);
 
   const value = useMemo<DataContextValue>(
     () => ({

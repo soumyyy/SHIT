@@ -23,14 +23,27 @@ export interface AttendanceLog {
   id: string;
   date: string; // YYYY-MM-DD
   subjectId: string;
-  slotId?: string;
+  slotId: string;
   status: AttendanceStatus;
-  markedAt: string;
+  markedAt: string; // ISO timestamp
 }
 
 export interface Settings {
-  semesterWeeks: number;
-  minAttendance: number;
-  semesterStartDate?: string;
-  version: number;
+  semesterStartDate: string; // YYYY-MM-DD
+  semesterEndDate?: string; // YYYY-MM-DD
+  minAttendanceThreshold: number; // 0.0 to 1.0 (e.g., 0.8 for 80%)
+}
+
+export interface SlotOverride {
+  id: string;
+  originalSlotId: string;
+  date: string; // YYYY-MM-DD - specific date for this override
+  type: "cancelled" | "rescheduled" | "makeup";
+
+  // For rescheduled/makeup classes:
+  newDayOfWeek?: number;
+  newStartTime?: string;
+  newDurationMinutes?: number;
+  newRoom?: string;
+  reason?: string;
 }

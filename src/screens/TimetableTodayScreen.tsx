@@ -25,7 +25,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const dayOfWeek = getTodayDayOfWeek(selectedDate);
-  const { slots, subjects, attendanceLogs, markAttendance } = useData();
+  const { slots, subjects, attendanceLogs, markAttendance, settings } = useData();
   const swipeHandlers = useTabSwipe(navigation, "TimetableTab");
 
   useEffect(() => {
@@ -52,6 +52,12 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   };
 
   const isToday = selectedDate.toDateString() === currentDate.toDateString();
+
+  // Calculate date string once for reuse
+  const selectedDateString = selectedDate.toISOString().split("T")[0];
+
+  // Check if selected date is before semester start
+  const isBeforeSemester = selectedDateString < settings.semesterStartDate;
 
   const subjectsById = useMemo(
     () => new Map(subjects.map((subject) => [subject.id, subject])),
@@ -91,7 +97,6 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   };
 
   // Find existing attendance for selected slot on selected date
-  const selectedDateString = selectedDate.toISOString().split("T")[0];
   const existingAttendance = selectedSlot
     ? attendanceLogs.find(
       (log) => log.slotId === selectedSlot.id && log.date === selectedDateString
@@ -143,7 +148,19 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
           {/* <Text style={styles.sectionSubtitle}>Long press to mark attendance</Text> */}
         </View>
 
-        {todaysSlots.length === 0 ? (
+        {isBeforeSemester ? (
+          <View style={styles.semesterMessage}>
+            <Text style={styles.semesterMessageTitle}>Classes haven't started yet</Text>
+            <Text style={styles.semesterMessageText}>
+              Semester begins on {new Date(settings.semesterStartDate).toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </Text>
+          </View>
+        ) : todaysSlots.length === 0 ? (
           <Text style={styles.emptyText}>Enjoy the free day 🎉</Text>
         ) : (
           todaysSlots.map((slot) => {
@@ -296,5 +313,24 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: typography.small,
     fontWeight: "700",
+  },
+  semesterMessage: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    alignItems: "center",
+  },
+  semesterMessageTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.body,
+    fontWeight: "700",
+    marginBottom: spacing.xs,
+  },
+  semesterMessageText: {
+    color: colors.textSecondary,
+    fontSize: typography.small,
+    textAlign: "center",
   },
 });

@@ -2,7 +2,7 @@ import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, 
 import { Alert, ActivityIndicator, View, StyleSheet } from "react-native";
 
 import { colors, spacing } from "@/constants/theme";
-import { AttendanceLog, AttendanceStatus, Subject, TimetableSlot } from "@/data/models";
+import { AttendanceLog, AttendanceStatus, Settings, SlotOverride, Subject, TimetableSlot } from "@/data/models";
 import { mockSlots, mockSubjects } from "@/data/mockData";
 import { Storage } from "@/storage/storage";
 
@@ -32,10 +32,14 @@ interface DataContextValue {
   subjects: Subject[];
   slots: TimetableSlot[];
   attendanceLogs: AttendanceLog[];
+  settings: Settings;
+  slotOverrides: SlotOverride[];
   loading: boolean;
   markAttendance: (payload: MarkAttendancePayload) => Promise<void>;
   addSubject: (payload: AddSubjectPayload) => Promise<void>;
   addSlot: (payload: AddSlotPayload) => Promise<void>;
+  updateSettings: (settings: Partial<Settings>) => Promise<void>;
+  addSlotOverride: (override: Omit<SlotOverride, "id">) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -52,6 +56,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [slots, setSlots] = useState<TimetableSlot[]>([]);
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
+  const [settings, setSettings] = useState<Settings>({
+    semesterStartDate: "2026-01-02",
+    minAttendanceThreshold: 0.8,
+  });
+  const [slotOverrides, setSlotOverrides] = useState<SlotOverride[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -197,18 +206,38 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     [persistSlots, slots, subjects],
   );
 
+  const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
+    const updated = { ...settings, ...newSettings };
+    setSettings(updated);
+    // TODO: Persist to AsyncStorage
+  }, [settings]);
+
+  const addSlotOverride = useCallback(async (override: Omit<SlotOverride, "id">) => {
+    const newOverride: SlotOverride = {
+      ...override,
+      id: Date.now().toString(),
+    };
+    const updated = [...slotOverrides, newOverride];
+    setSlotOverrides(updated);
+    // TODO: Persist to AsyncStorage
+  }, [slotOverrides]);
+
   const value = useMemo<DataContextValue>(
     () => ({
       subjects,
       slots,
       attendanceLogs,
+      settings,
+      slotOverrides,
       loading,
       markAttendance,
       addSubject,
       addSlot,
+      updateSettings,
+      addSlotOverride,
       refresh: load,
     }),
-    [subjects, slots, attendanceLogs, loading, markAttendance, addSubject, addSlot, load],
+    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, load],
   );
 
   if (loading) {

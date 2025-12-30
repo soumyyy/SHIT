@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AttendanceModal } from "@/components/AttendanceModal";
 import { LectureCard } from "@/components/LectureCard";
-import { colors, layout, spacing, typography } from "@/constants/theme";
+import { colors, layout, radii, spacing, typography } from "@/constants/theme";
 import { formatTimeRange, getDayLabel, getTodayDayOfWeek } from "@/data/helpers";
 import { TimetableSlot } from "@/data/models";
 import { useData } from "@/data/DataContext";
@@ -23,7 +23,8 @@ const formatDateLabel = (date: Date) =>
 
 export const TimetableTodayScreen = ({ navigation }: Props) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const dayOfWeek = getTodayDayOfWeek(currentDate);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const dayOfWeek = getTodayDayOfWeek(selectedDate);
   const { slots, subjects, attendanceLogs, markAttendance } = useData();
   const swipeHandlers = useTabSwipe(navigation, "TimetableTab");
 
@@ -33,6 +34,24 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
     }, 60_000);
     return () => clearInterval(timer);
   }, []);
+
+  const goToPreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
+
+  const isToday = selectedDate.toDateString() === currentDate.toDateString();
 
   const subjectsById = useMemo(
     () => new Map(subjects.map((subject) => [subject.id, subject])),
@@ -71,11 +90,11 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
     }
   };
 
-  // Find existing attendance for selected slot on today's date
-  const todayDateString = currentDate.toISOString().split("T")[0];
+  // Find existing attendance for selected slot on selected date
+  const selectedDateString = selectedDate.toISOString().split("T")[0];
   const existingAttendance = selectedSlot
     ? attendanceLogs.find(
-      (log) => log.slotId === selectedSlot.id && log.date === todayDateString
+      (log) => log.slotId === selectedSlot.id && log.date === selectedDateString
     )
     : undefined;
 
@@ -88,20 +107,35 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
         {...swipeHandlers}
       >
         <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.dayLabel}>
-              {getDayLabel(dayOfWeek)} • {formatDateLabel(currentDate)}
-            </Text>
-            <Text style={styles.slotCount}>
-              {todaysSlots.length} slot{todaysSlots.length === 1 ? "" : "s"}
-            </Text>
+          <View style={styles.dateNavigation}>
+            <Pressable style={styles.navButton} onPress={goToPreviousDay}>
+              <Text style={styles.navButtonText}>←</Text>
+            </Pressable>
+            <View style={styles.dateInfo}>
+              <Text style={styles.dayLabel}>
+                {getDayLabel(dayOfWeek)} • {formatDateLabel(selectedDate)}
+              </Text>
+              <Text style={styles.slotCount}>
+                {todaysSlots.length} slot{todaysSlots.length === 1 ? "" : "s"}
+              </Text>
+            </View>
+            <Pressable style={styles.navButton} onPress={goToNextDay}>
+              <Text style={styles.navButtonText}>→</Text>
+            </Pressable>
           </View>
-          <Pressable
-            style={styles.compactButton}
-            onPress={() => navigation.navigate("FullTimetable")}
-          >
-            <Text style={styles.compactButtonText}>Full timetable</Text>
-          </Pressable>
+          <View style={styles.headerButtons}>
+            {!isToday && (
+              <Pressable style={styles.todayButton} onPress={goToToday}>
+                <Text style={styles.todayButtonText}>Today</Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={styles.compactButton}
+              onPress={() => navigation.navigate("FullTimetable")}
+            >
+              <Text style={styles.compactButtonText}>Full timetable</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.sectionHeader}>
@@ -115,7 +149,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
           todaysSlots.map((slot) => {
             const subject = subjectsById.get(slot.subjectId);
             const attendanceStatus = attendanceLogs.find(
-              (log) => log.slotId === slot.id && log.date === todayDateString,
+              (log) => log.slotId === slot.id && log.date === selectedDateString,
             )?.status;
             return (
               <LectureCard
@@ -162,10 +196,51 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "column",
+    gap: spacing.sm,
     marginBottom: spacing.lg,
+  },
+  dateNavigation: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  navButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    backgroundColor: colors.glass,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navButtonText: {
+    color: colors.accent,
+    fontSize: typography.heading,
+    fontWeight: "600",
+  },
+  dateInfo: {
+    flex: 1,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    justifyContent: "flex-end",
+  },
+  todayButton: {
+    borderRadius: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.accent + "15",
+  },
+  todayButtonText: {
+    color: colors.accent,
+    fontSize: typography.small,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
   dayLabel: {
     color: colors.textMuted,

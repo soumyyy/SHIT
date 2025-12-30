@@ -120,20 +120,23 @@ export const TimetableGrid = ({ slots, subjects }: TimetableGridProps) => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl + spacing.lg,
     alignItems: "center",
+    justifyContent: "center",
   },
   rotated: {
     transform: [{ rotate: "90deg" }],
   },
   card: {
-    width: 640,
-    height: 460,
+    width: 580,
+    maxWidth: "95%",
+    height: 400,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    padding: spacing.md,
+    padding: spacing.sm,
     ...shadows.medium,
   },
   headerRow: {
@@ -211,7 +214,7 @@ const styles = StyleSheet.create({
   },
   room: {
     color: colors.textSecondary,
-    fontSize: typography.tiny - 1,
+    fontSize: typography.tiny - 2,
     marginTop: spacing.xs / 2,
     textTransform: "uppercase",
     letterSpacing: 0.6,

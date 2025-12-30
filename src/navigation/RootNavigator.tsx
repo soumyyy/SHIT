@@ -1,10 +1,9 @@
 import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { StyleSheet, Text, View } from "react-native";
 import { enableScreens } from "react-native-screens";
 
-import { colors, radii, shadows, spacing } from "@/constants/theme";
+import { colors } from "@/constants/theme";
 import { AttendanceScreen } from "@/screens/AttendanceScreen";
 import { FullTimetableScreen } from "@/screens/FullTimetableScreen";
 import { SubjectOverviewScreen } from "@/screens/SubjectOverviewScreen";
@@ -58,11 +57,7 @@ const TimetableStackNavigator = () => (
   </TimetableStack.Navigator>
 );
 
-const TabLabel = ({ title, focused }: { title: string; focused: boolean }) => (
-  <View style={[tabStyles.labelContainer, focused && tabStyles.labelContainerActive]}>
-    <Text style={[tabStyles.labelText, focused && tabStyles.labelTextActive]}>{title}</Text>
-  </View>
-);
+
 
 export const RootNavigator = () => (
   <NavigationContainer theme={navigationTheme}>
@@ -70,8 +65,6 @@ export const RootNavigator = () => (
       tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: tabStyles.container,
-        tabBarItemStyle: tabStyles.item,
         tabBarHideOnKeyboard: true,
       }}
     >
@@ -79,46 +72,18 @@ export const RootNavigator = () => (
         name="TimetableTab"
         component={TimetableStackNavigator}
         options={{
-          tabBarLabel: ({ focused }) => <TabLabel title="Timetable" focused={focused} />,
+          tabBarLabel: "Timetable",
         }}
       />
       <Tab.Screen
         name="AttendanceTab"
         component={AttendanceScreen}
         options={{
-          tabBarLabel: ({ focused }) => <TabLabel title="Attendance" focused={focused} />,
+          tabBarLabel: "Attendance",
         }}
       />
     </Tab.Navigator>
   </NavigationContainer>
 );
 
-const tabStyles = StyleSheet.create({
-  container: {
-    backgroundColor: "transparent",
-    borderTopWidth: 0,
-    elevation: 0,
-  },
-  item: {
-    borderRadius: radii.pill,
-  },
-  labelContainer: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.pill,
-    backgroundColor: "transparent",
-  },
-  labelContainerActive: {
-    backgroundColor: colors.glassBorder,
-  },
-  labelText: {
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    color: colors.textSecondary,
-  },
-  labelTextActive: {
-    color: colors.accent,
-  },
-});
+

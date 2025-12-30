@@ -46,7 +46,11 @@ export const SubjectOverviewScreen = ({ route }: Props) => {
     );
   }
 
-  const totalSlots = slots.filter((slot) => slot.subjectId === subjectId).length;
+  // Calculate total hours per week
+  const totalMinutesPerWeek = slots
+    .filter((slot) => slot.subjectId === subjectId)
+    .reduce((sum, slot) => sum + slot.durationMinutes, 0);
+  const totalHoursPerWeek = totalMinutesPerWeek / 60;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -56,20 +60,18 @@ export const SubjectOverviewScreen = ({ route }: Props) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <Text style={styles.subjectName}>{subject.name}</Text>
-          <Text style={styles.subjectRoom}>
-            Default room • {subject.defaultRoom ?? "Not set"}
-          </Text>
-          <View style={styles.heroStats}>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>{totalSlots}</Text>
-              <Text style={styles.heroStatLabel}>Weekly slots</Text>
-            </View>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>{days.length}</Text>
-              <Text style={styles.heroStatLabel}>Active days</Text>
-            </View>
+          <View style={styles.titleRow}>
+            <Text style={styles.subjectName}>{subject.name}</Text>
+            <Text style={styles.hoursPerWeek}>
+              {totalHoursPerWeek % 1 === 0
+                ? totalHoursPerWeek.toFixed(0)
+                : totalHoursPerWeek.toFixed(1)}{" "}
+              hours/week
+            </Text>
           </View>
+          {subject.professor && (
+            <Text style={styles.professor}>Professor: {subject.professor}</Text>
+          )}
         </View>
 
         {days.length === 0 ? (
@@ -102,51 +104,38 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: layout.screenPadding,
-    paddingBottom: spacing.xl,
-    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.sm,
   },
   hero: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    padding: spacing.xl,
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
+    padding: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     ...shadows.medium,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: spacing.sm,
+    flexWrap: "wrap",
   },
   subjectName: {
     color: colors.textPrimary,
     fontSize: typography.display,
     fontWeight: "800",
   },
-  subjectRoom: {
+  hoursPerWeek: {
+    color: colors.textMuted,
+    fontSize: typography.small,
+    fontWeight: "600",
+  },
+  professor: {
     color: colors.textSecondary,
     fontSize: typography.body,
-    marginTop: spacing.xs,
-    marginBottom: spacing.lg,
-  },
-  heroStats: {
-    flexDirection: "row",
-    gap: spacing.md,
-  },
-  heroStat: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  heroStatValue: {
-    color: colors.accent,
-    fontSize: typography.heading,
-    fontWeight: "800",
-  },
-  heroStatLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
     marginTop: spacing.xs,
   },
   description: {

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { colors, radii, spacing, typography } from "@/constants/theme";
@@ -19,6 +20,15 @@ export const AttendanceModal = ({
   onClose,
   onSubmit,
 }: AttendanceModalProps) => {
+  const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>("present");
+
+  // Reset to "present" when modal opens
+  useEffect(() => {
+    if (visible) {
+      setSelectedStatus("present");
+    }
+  }, [visible]);
+
   if (!visible || !slot || !subject) {
     return null;
   }
@@ -37,15 +47,23 @@ export const AttendanceModal = ({
           {slot.room ? <Text style={styles.room}>{slot.room}</Text> : null}
 
           <View style={styles.selectorRow}>
-            {(["present", "absent"] as AttendanceStatus[]).map((value) => (
-              <Pressable
-                key={value}
-                style={styles.option}
-                onPress={() => handleSelect(value)}
-              >
-                <Text style={styles.optionLabel}>{value.toUpperCase()}</Text>
-              </Pressable>
-            ))}
+            {(["present", "absent"] as AttendanceStatus[]).map((value) => {
+              const isSelected = selectedStatus === value;
+              return (
+                <Pressable
+                  key={value}
+                  style={[styles.option, isSelected && styles.optionSelected]}
+                  onPress={() => {
+                    setSelectedStatus(value);
+                    handleSelect(value);
+                  }}
+                >
+                  <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
+                    {value.toUpperCase()}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </Pressable>
       </Pressable>
@@ -98,8 +116,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.card,
   },
+  optionSelected: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
   optionLabel: {
     color: colors.textPrimary,
     fontWeight: "700",
+  },
+  optionLabelSelected: {
+    color: "#FFFFFF",
   },
 });

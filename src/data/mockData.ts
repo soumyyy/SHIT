@@ -8,6 +8,7 @@ const now = new Date().toISOString();
 type SubjectSeed = {
   id: string;
   name: string;
+  professor?: string;
   defaultRoom?: string;
 };
 
@@ -42,6 +43,7 @@ const getDuration = (slot: SlotSeed) => {
 export const mockSubjects: Subject[] = (subjectsSeed as SubjectSeed[]).map((subject) => ({
   id: subject.id,
   name: subject.name,
+  professor: subject.professor,
   defaultRoom: subject.defaultRoom,
   createdAt: now,
 }));

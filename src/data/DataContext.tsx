@@ -9,6 +9,7 @@ import { Storage } from "@/storage/storage";
 interface AddSubjectPayload {
   id: string;
   name: string;
+  professor?: string;
   defaultRoom?: string;
 }
 
@@ -126,7 +127,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const addSubject = useCallback(
-    async ({ id, name, defaultRoom }: AddSubjectPayload) => {
+    async ({ id, name, professor, defaultRoom }: AddSubjectPayload) => {
       const normalizedId = id.trim().toUpperCase();
       const normalizedName = name.trim();
 
@@ -140,6 +141,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       const subject: Subject = {
         id: normalizedId,
         name: normalizedName,
+        professor: professor?.trim(),
         defaultRoom: defaultRoom?.trim(),
         createdAt: new Date().toISOString(),
       };

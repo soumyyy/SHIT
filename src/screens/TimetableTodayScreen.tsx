@@ -25,7 +25,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const dayOfWeek = getTodayDayOfWeek(currentDate);
   const { slots, subjects, attendanceLogs, markAttendance } = useData();
-  const swipeResponder = useTabSwipe(navigation, "TimetableTab");
+  const swipeHandlers = useTabSwipe(navigation, "TimetableTab");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -80,11 +80,12 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
     : undefined;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]} {...swipeResponder.panHandlers}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        {...swipeHandlers}
       >
         <View style={styles.headerRow}>
           <View>
@@ -113,12 +114,16 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
         ) : (
           todaysSlots.map((slot) => {
             const subject = subjectsById.get(slot.subjectId);
+            const attendanceStatus = attendanceLogs.find(
+              (log) => log.slotId === slot.id && log.date === todayDateString,
+            )?.status;
             return (
               <LectureCard
                 key={slot.id}
                 title={subject?.name ?? "Subject"}
                 subtitle={formatTimeRange(slot.startTime, slot.durationMinutes)}
                 room={slot.room || subject?.defaultRoom}
+                status={attendanceStatus ?? null}
                 onPress={() =>
                   navigation.navigate("SubjectOverview", { subjectId: slot.subjectId })
                 }
@@ -152,7 +157,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: layout.screenPadding - spacing.sm,
+    paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.xl,
     paddingTop: spacing.md,
   },

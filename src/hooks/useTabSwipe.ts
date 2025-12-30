@@ -1,25 +1,44 @@
-import { useMemo } from "react";
-import { PanResponder } from "react-native";
+import { useMemo, useRef } from "react";
+import { GestureResponderEvent } from "react-native";
 import { NavigationProp } from "@react-navigation/native";
 
 type Tabs = "TimetableTab" | "AttendanceTab";
 
-const SWIPE_THRESHOLD = 40;
+const SWIPE_THRESHOLD = 80;
 
-export const useTabSwipe = (navigation: NavigationProp<any>, currentTab: Tabs) => {
+interface SwipeHandlers {
+  onTouchStart: (e: GestureResponderEvent) => void;
+  onTouchEnd: (e: GestureResponderEvent) => void;
+}
+
+export const useTabSwipe = (
+  navigation: NavigationProp<any>,
+  currentTab: Tabs
+): SwipeHandlers => {
+  const startX = useRef(0);
+
   return useMemo(() => {
     const parent = navigation.getParent();
-    return PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) =>
-        Math.abs(gesture.dx) > 20 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
-      onPanResponderRelease: (_, gesture) => {
+
+    return {
+      onTouchStart: (e: GestureResponderEvent) => {
+        startX.current = e.nativeEvent.pageX;
+      },
+      onTouchEnd: (e: GestureResponderEvent) => {
         if (!parent) return;
-        if (gesture.dx < -SWIPE_THRESHOLD && currentTab === "TimetableTab") {
-          parent.navigate("AttendanceTab");
-        } else if (gesture.dx > SWIPE_THRESHOLD && currentTab === "AttendanceTab") {
-          parent.navigate("TimetableTab");
+        const endX = e.nativeEvent.pageX;
+        const deltaX = endX - startX.current;
+
+        if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+          if (deltaX < 0 && currentTab === "TimetableTab") {
+            // Swipe left - go to Attendance
+            parent.navigate("AttendanceTab");
+          } else if (deltaX > 0 && currentTab === "AttendanceTab") {
+            // Swipe right - go to Timetable
+            parent.navigate("TimetableTab");
+          }
         }
       },
-    });
+    };
   }, [navigation, currentTab]);
 };

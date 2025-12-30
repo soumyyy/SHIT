@@ -3,19 +3,33 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { colors, radii, shadows, spacing, typography } from "@/constants/theme";
 
+export type LectureStatus = "present" | "absent" | null;
+
 interface LectureCardProps {
   title: string;
   subtitle?: string;
   room?: string;
+  status?: LectureStatus;
   rightElement?: ReactNode;
   onPress?: () => void;
   onLongPress?: () => void;
 }
 
+const STATUS_COLORS: Record<Exclude<LectureStatus, null>, string> = {
+  present: colors.accent,
+  absent: colors.danger,
+};
+
+const STATUS_TEXT: Record<Exclude<LectureStatus, null>, string> = {
+  present: "P",
+  absent: "A",
+};
+
 export const LectureCard = ({
   title,
   subtitle,
   room,
+  status = null,
   rightElement,
   onPress,
   onLongPress,
@@ -33,7 +47,16 @@ export const LectureCard = ({
             {room ? <Text style={styles.roomInline}> • {room}</Text> : null}
           </Text>
         </View>
-        {rightElement ? <View style={styles.right}>{rightElement}</View> : null}
+        <View style={styles.badgeRow}>
+          {status ? (
+            <View style={[styles.statusBadge, { borderColor: STATUS_COLORS[status] }]}>
+              <Text style={[styles.statusText, { color: STATUS_COLORS[status] }]}>
+                {STATUS_TEXT[status]}
+              </Text>
+            </View>
+          ) : null}
+          {rightElement ? <View style={styles.right}>{rightElement}</View> : null}
+        </View>
       </View>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
@@ -67,6 +90,11 @@ const styles = StyleSheet.create({
   titleColumn: {
     flex: 1,
   },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
   title: {
     color: colors.textPrimary,
     fontSize: typography.body,
@@ -79,6 +107,16 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textSecondary,
+    fontSize: typography.small,
+  },
+  statusBadge: {
+    borderWidth: 1,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  statusText: {
+    fontWeight: "700",
     fontSize: typography.small,
   },
   right: {

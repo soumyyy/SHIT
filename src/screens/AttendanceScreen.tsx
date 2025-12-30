@@ -16,7 +16,7 @@ type AttendanceScreenProps = BottomTabScreenProps<RootTabParamList, "AttendanceT
 
 export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
   const { subjects, attendanceLogs } = useData();
-  const swipeResponder = useTabSwipe(navigation, "AttendanceTab");
+  const swipeHandlers = useTabSwipe(navigation, "AttendanceTab");
 
   const statsBySubject = useMemo(() => {
     const entries = subjects.map((subject) => [
@@ -45,11 +45,12 @@ export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
     aggregate.total === 0 ? 100 : (aggregate.present / aggregate.total) * 100;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]} {...swipeResponder.panHandlers}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        {...swipeHandlers}
       >
         <View style={styles.hero}>
           <View>

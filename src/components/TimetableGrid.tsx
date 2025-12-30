@@ -135,13 +135,15 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    padding: spacing.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
     ...shadows.medium,
   },
   headerRow: {
     flexDirection: "row",
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
     alignItems: "center",
   },
   timeHeader: {

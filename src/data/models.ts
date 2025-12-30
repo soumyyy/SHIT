@@ -36,14 +36,14 @@ export interface Settings {
 
 export interface SlotOverride {
   id: string;
-  originalSlotId: string;
+  originalSlotId?: string; // Optional for "added" type
   date: string; // YYYY-MM-DD - specific date for this override
-  type: "cancelled" | "rescheduled" | "makeup";
+  type: "cancelled" | "modified" | "added";
 
-  // For rescheduled/makeup classes:
-  newDayOfWeek?: number;
-  newStartTime?: string;
-  newDurationMinutes?: number;
-  newRoom?: string;
+  // For modified/added classes:
+  subjectId?: string;
+  startTime?: string;
+  durationMinutes?: number;
+  room?: string;
   reason?: string;
 }

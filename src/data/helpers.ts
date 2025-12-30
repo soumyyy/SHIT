@@ -22,3 +22,81 @@ export const formatTimeRange = (startTime: string, durationMinutes: number): str
 
   return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
 };
+
+import { SlotOverride, TimetableSlot } from "./models";
+
+export interface EffectiveSlot extends TimetableSlot {
+  isOverridden?: boolean;
+  overrideType?: "cancelled" | "modified" | "added";
+}
+
+/**
+ * Get effective slots for a specific date, applying any overrides
+ */
+export function getEffectiveSlots(
+  date: string, // YYYY-MM-DD
+  regularSlots: TimetableSlot[],
+  overrides: SlotOverride[]
+): EffectiveSlot[] {
+  // Get day of week from date (0 = Monday)
+  const dateObj = new Date(date + "T00:00:00");
+  const dayOfWeek = (dateObj.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
+
+  // Get overrides for this specific date
+  const dateOverrides = overrides.filter((o) => o.date === date);
+
+  // Start with regular slots for this day
+  let effectiveSlots: EffectiveSlot[] = regularSlots
+    .filter((slot) => slot.dayOfWeek === dayOfWeek)
+    .map((slot) => ({ ...slot }));
+
+  // Apply cancellations
+  const cancelledSlotIds = dateOverrides
+    .filter((o) => o.type === "cancelled")
+    .map((o) => o.originalSlotId);
+
+  effectiveSlots = effectiveSlots.filter(
+    (slot) => !cancelledSlotIds.includes(slot.id)
+  );
+
+  // Apply modifications
+  dateOverrides
+    .filter((o) => o.type === "modified")
+    .forEach((override) => {
+      const slotIndex = effectiveSlots.findIndex(
+        (s) => s.id === override.originalSlotId
+      );
+      if (slotIndex !== -1) {
+        effectiveSlots[slotIndex] = {
+          ...effectiveSlots[slotIndex],
+          durationMinutes: override.durationMinutes ?? effectiveSlots[slotIndex].durationMinutes,
+          room: override.room ?? effectiveSlots[slotIndex].room,
+          isOverridden: true,
+          overrideType: "modified",
+        };
+      }
+    });
+
+  // Add one-time slots
+  dateOverrides
+    .filter((o) => o.type === "added" && o.subjectId && o.startTime && o.durationMinutes)
+    .forEach((override) => {
+      effectiveSlots.push({
+        id: override.id,
+        subjectId: override.subjectId!,
+        dayOfWeek,
+        startTime: override.startTime!,
+        durationMinutes: override.durationMinutes!,
+        room: override.room || "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isOverridden: true,
+        overrideType: "added",
+      });
+    });
+
+  // Sort by start time
+  effectiveSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  return effectiveSlots;
+}

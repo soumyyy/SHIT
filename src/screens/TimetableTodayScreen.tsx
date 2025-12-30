@@ -4,9 +4,10 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AttendanceModal } from "@/components/AttendanceModal";
+import { EditSlotModal } from "@/components/EditSlotModal";
 import { LectureCard } from "@/components/LectureCard";
 import { colors, layout, radii, spacing, typography } from "@/constants/theme";
-import { formatTimeRange, getDayLabel, getTodayDayOfWeek } from "@/data/helpers";
+import { formatTimeRange, getDayLabel, getEffectiveSlots, getTodayDayOfWeek } from "@/data/helpers";
 import { TimetableSlot } from "@/data/models";
 import { useData } from "@/data/DataContext";
 import { useTabSwipe } from "@/hooks/useTabSwipe";
@@ -25,7 +26,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const dayOfWeek = getTodayDayOfWeek(selectedDate);
-  const { slots, subjects, attendanceLogs, markAttendance, settings } = useData();
+  const { slots, subjects, attendanceLogs, markAttendance, settings, slotOverrides, addSlotOverride } = useData();
   const swipeHandlers = useTabSwipe(navigation, "TimetableTab");
 
   useEffect(() => {
@@ -65,19 +66,76 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   );
 
   const todaysSlots = useMemo(
-    () =>
-      slots
-        .filter((slot) => slot.dayOfWeek === dayOfWeek)
-        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
-    [dayOfWeek, slots],
+    () => getEffectiveSlots(selectedDateString, slots, slotOverrides),
+    [selectedDateString, slots, slotOverrides],
   );
 
   const [selectedSlot, setSelectedSlot] = useState<TimetableSlot | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const handleLongPress = (slot: TimetableSlot) => {
     setSelectedSlot(slot);
     setModalVisible(true);
+  };
+
+  const handleOpenEdit = () => {
+    setModalVisible(false);
+    setEditModalVisible(true);
+  };
+
+  const handleCancelLecture = async () => {
+    if (!selectedSlot) return;
+    try {
+      await addSlotOverride({
+        originalSlotId: selectedSlot.id,
+        date: selectedDateString,
+        type: "cancelled",
+      });
+      Alert.alert("Success", "Lecture cancelled for this date");
+    } catch (error) {
+      Alert.alert("Error", (error as Error).message);
+    }
+  };
+
+  const handleModifyDuration = async (newDuration: number) => {
+    if (!selectedSlot) return;
+    try {
+      await addSlotOverride({
+        originalSlotId: selectedSlot.id,
+        date: selectedDateString,
+        type: "modified",
+        durationMinutes: newDuration,
+      });
+      Alert.alert("Success", `Duration updated to ${newDuration} minutes`);
+    } catch (error) {
+      Alert.alert("Error", (error as Error).message);
+    }
+  };
+
+  const handleChangeDate = async (newDate: string, newTime: string) => {
+    if (!selectedSlot) return;
+    try {
+      // Cancel on current date
+      await addSlotOverride({
+        originalSlotId: selectedSlot.id,
+        date: selectedDateString,
+        type: "cancelled",
+      });
+      // Add on new date
+      await addSlotOverride({
+        originalSlotId: selectedSlot.id,
+        date: newDate,
+        type: "added",
+        subjectId: selectedSlot.subjectId,
+        startTime: newTime,
+        durationMinutes: selectedSlot.durationMinutes,
+        room: selectedSlot.room,
+      });
+      Alert.alert("Success", `Lecture rescheduled to ${newDate} at ${newTime}`);
+    } catch (error) {
+      Alert.alert("Error", (error as Error).message);
+    }
   };
 
   const handleModalSubmit = async (status: "present" | "absent") => {
@@ -194,6 +252,20 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
           setSelectedSlot(null);
         }}
         onSubmit={handleModalSubmit}
+        onEdit={handleOpenEdit}
+      />
+      <EditSlotModal
+        visible={editModalVisible}
+        slot={selectedSlot}
+        subject={selectedSlot ? subjectsById.get(selectedSlot.subjectId) : undefined}
+        currentDate={selectedDateString}
+        onClose={() => {
+          setEditModalVisible(false);
+          setSelectedSlot(null);
+        }}
+        onCancel={handleCancelLecture}
+        onModifyDuration={handleModifyDuration}
+        onChangeDate={handleChangeDate}
       />
     </SafeAreaView>
   );

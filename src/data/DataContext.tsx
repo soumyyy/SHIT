@@ -58,6 +58,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
   const [settings, setSettings] = useState<Settings>({
     semesterStartDate: "2026-01-02",
+    semesterEndDate: "2026-05-30",
     minAttendanceThreshold: 0.8,
   });
   const [slotOverrides, setSlotOverrides] = useState<SlotOverride[]>([]);

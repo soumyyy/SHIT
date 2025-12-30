@@ -12,6 +12,7 @@ interface AttendanceModalProps {
   existingStatus?: AttendanceStatus;
   onClose: () => void;
   onSubmit: (status: AttendanceStatus) => Promise<void>;
+  onEdit?: () => void;
 }
 
 export const AttendanceModal = ({
@@ -21,6 +22,7 @@ export const AttendanceModal = ({
   existingStatus,
   onClose,
   onSubmit,
+  onEdit,
 }: AttendanceModalProps) => {
   const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>("present");
 
@@ -44,9 +46,18 @@ export const AttendanceModal = ({
     <Modal transparent visible animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.card} onPress={(event) => event.stopPropagation()}>
-          <Text style={styles.title}>{subject.name}</Text>
-          <Text style={styles.subtitle}>{formatTimeRange(slot.startTime, slot.durationMinutes)}</Text>
-          {slot.room ? <Text style={styles.room}>{slot.room}</Text> : null}
+          <View style={styles.header}>
+            <View style={styles.headerText}>
+              <Text style={styles.title}>{subject.name}</Text>
+              <Text style={styles.subtitle}>{formatTimeRange(slot.startTime, slot.durationMinutes)}</Text>
+              {slot.room ? <Text style={styles.room}>{slot.room}</Text> : null}
+            </View>
+            {onEdit && (
+              <Pressable style={styles.editButton} onPress={onEdit}>
+                <Text style={styles.editIcon}>✏️</Text>
+              </Pressable>
+            )}
+          </View>
 
           <View style={styles.selectorRow}>
             {(["present", "absent"] as AttendanceStatus[]).map((value) => {
@@ -90,6 +101,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: colors.glassBorder,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: spacing.sm,
+  },
+  headerText: {
+    flex: 1,
+  },
+  editButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.md,
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: spacing.sm,
+  },
+  editIcon: {
+    fontSize: 18,
   },
   title: {
     color: colors.textPrimary,

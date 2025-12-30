@@ -60,7 +60,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
   const [settings, setSettings] = useState<Settings>({
     semesterStartDate: "2026-01-02",
-    semesterEndDate: "2026-05-30",
+    semesterWeeks: 15,
     minAttendanceThreshold: 0.8,
   });
   const [slotOverrides, setSlotOverrides] = useState<SlotOverride[]>([]);
@@ -222,6 +222,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     [persistSlots, slots, subjects],
   );
 
+
+
   const updateSettings = useCallback(async (newSettings: Partial<Settings>) => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
@@ -269,7 +271,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       deleteSubject,
       refresh: load,
     }),
-    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load],
+    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load, subjects, slots],
   );
 
   if (loading) {

@@ -7,6 +7,7 @@ import { colors, layout, radii, shadows, spacing, typography } from "@/constants
 import { useData } from "@/data/DataContext";
 import { AttendanceStackParamList } from "@/navigation/types";
 import { computeAttendance, projectSemesterCount } from "@/data/attendance";
+import { calculateSemesterEndDate } from "@/data/helpers";
 
 type Props = NativeStackScreenProps<AttendanceStackParamList, "SubjectAttendance">;
 
@@ -27,12 +28,19 @@ export const SubjectAttendanceScreen = ({ route }: Props) => {
             slots,
             slotOverrides,
             settings.semesterStartDate,
-            settings.semesterEndDate || ""
+            calculateSemesterEndDate(settings.semesterStartDate, settings.semesterWeeks)
         );
-        const maxMissable = Math.floor(projectedTotal * (1 - settings.minAttendanceThreshold));
-        const missedStrict = stats.total - stats.present;
+
+        // Simple formula:
+        // Need to attend: ceil(total * 80%) classes minimum
+        // Can miss: total - minimum required
+        const minRequired = Math.ceil(projectedTotal * settings.minAttendanceThreshold);
+        const maxMissable = projectedTotal - minRequired;
+        const alreadyMissed = stats.total - stats.present;
+        const safeToMiss = maxMissable - alreadyMissed;
+
         return {
-            safeToMiss: maxMissable - missedStrict,
+            safeToMiss,
             projectedTotal
         };
     }, [subjectId, slots, slotOverrides, settings, stats]);

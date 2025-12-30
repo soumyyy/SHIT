@@ -87,6 +87,8 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
         }
     };
 
+
+
     const renderSubjectItem = ({ item }: { item: Subject }) => (
         <Pressable style={styles.subjectCard} onPress={() => handleEditSubject(item)}>
             <View style={styles.subjectCardHeader}>
@@ -374,22 +376,13 @@ const styles = StyleSheet.create({
         textAlignVertical: "top",
     },
     footer: {
-        padding: layout.screenPadding,
+        paddingVertical: spacing.md,
+        paddingHorizontal: layout.screenPadding,
         flexDirection: "row",
         gap: spacing.md,
         borderTopWidth: 1,
         borderTopColor: colors.border,
         backgroundColor: colors.background,
-    },
-    resetButton: {
-        flex: 1,
-        padding: spacing.md,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    resetButtonText: {
-        color: colors.danger,
-        fontWeight: "600",
     },
     saveButton: {
         flex: 2,

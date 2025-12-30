@@ -29,7 +29,7 @@ export interface AttendanceLog {
 
 export interface Settings {
   semesterStartDate: string; // YYYY-MM-DD
-  semesterEndDate?: string; // YYYY-MM-DD
+  semesterWeeks: number; // Number of weeks in the semester (e.g., 15)
   minAttendanceThreshold: number; // 0.0 to 1.0 (e.g., 0.8 for 80%)
 }
 

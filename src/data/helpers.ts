@@ -105,3 +105,12 @@ export function getEffectiveSlots(
 
   return effectiveSlots;
 }
+
+/**
+ * Calculate semester end date from start date and number of weeks
+ */
+export const calculateSemesterEndDate = (startDate: string, weeks: number): string => {
+  const start = new Date(startDate);
+  start.setDate(start.getDate() + (weeks * 7) - 1); // -1 because we include the start day
+  return start.toISOString().split('T')[0];
+};

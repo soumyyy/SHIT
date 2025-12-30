@@ -71,7 +71,7 @@ export const TimetableGrid = ({ slots, subjects }: TimetableGridProps) => {
         <View style={styles.card}>
           <View style={styles.headerRow}>
             <View style={styles.timeHeader}>
-              <Text style={styles.timeHeaderLabel}>Time</Text>
+              <Text style={styles.timeHeaderLabel}> </Text>
             </View>
             {DAY_INDEXES.map((day) => (
               <Text key={day} style={styles.dayLabel}>
@@ -132,17 +132,17 @@ const styles = StyleSheet.create({
     width: 580,
     height: 400,
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
+    // borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    paddingHorizontal: 10,
+    paddingHorizontal: spacing.xs,
     paddingVertical: 2,
     ...shadows.medium,
   },
   headerRow: {
     flexDirection: "row",
     gap: spacing.xs,
-    marginBottom: spacing.xs,
+    // marginBottom: spacing.xs,
     marginTop: spacing.xs,
     alignItems: "center",
   },

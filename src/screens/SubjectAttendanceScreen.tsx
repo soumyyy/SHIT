@@ -7,7 +7,7 @@ import { colors, layout, radii, shadows, spacing, typography } from "@/constants
 import { useData } from "@/data/DataContext";
 import { AttendanceStackParamList } from "@/navigation/types";
 import { computeAttendance, projectSemesterCount } from "@/data/attendance";
-import { calculateSemesterEndDate } from "@/data/helpers";
+import { calculateSemesterEndDate, formatLocalDate } from "@/data/helpers";
 
 type Props = NativeStackScreenProps<AttendanceStackParamList, "SubjectAttendance">;
 
@@ -47,7 +47,7 @@ export const SubjectAttendanceScreen = ({ route }: Props) => {
 
     // History (Past Logs + Past Cancellations)
     const history = useMemo(() => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = formatLocalDate(new Date());
         const items: Array<{
             id: string;
             date: string;
@@ -142,7 +142,10 @@ export const SubjectAttendanceScreen = ({ route }: Props) => {
                             {history.map(item => (
                                 <View key={item.id} style={styles.historyRow}>
                                     <View style={styles.historyLeft}>
-                                        <Text style={styles.historyDate}>{new Date(item.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</Text>
+                                        <Text style={styles.historyDate}>{(() => {
+                                            const [y, m, d] = item.date.split("-").map(Number);
+                                            return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                        })()}</Text>
                                         <Text style={styles.historyTime}>{item.time}</Text>
                                     </View>
                                     <View style={[

@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 import { AttendanceModal } from "@/components/AttendanceModal";
 import { EditSlotModal } from "@/components/EditSlotModal";
 import { LectureCard } from "@/components/LectureCard";
 import { colors, layout, radii, spacing, typography } from "@/constants/theme";
-import { formatTimeRange, getDayLabel, getEffectiveSlots, getTodayDayOfWeek } from "@/data/helpers";
+import { formatLocalDate, formatTimeRange, getDayLabel, getEffectiveSlots, getTodayDayOfWeek } from "@/data/helpers";
 import { TimetableSlot } from "@/data/models";
 import { useData } from "@/data/DataContext";
 import { useTabSwipe } from "@/hooks/useTabSwipe";
@@ -27,7 +28,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const dayOfWeek = getTodayDayOfWeek(selectedDate);
-  const { slots, subjects, attendanceLogs, markAttendance, settings, slotOverrides, addSlotOverride } = useData();
+  const { slots, subjects, attendanceLogs, markAttendance, unmarkAttendance, settings, slotOverrides, addSlotOverride } = useData();
   const swipeHandlers = useTabSwipe(navigation, "TimetableTab");
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   const isToday = selectedDate.toDateString() === currentDate.toDateString();
 
   // Calculate date string once for reuse
-  const selectedDateString = selectedDate.toISOString().split("T")[0];
+  const selectedDateString = formatLocalDate(selectedDate);
 
   // Check if selected date is before semester start
   const isBeforeSemester = selectedDateString < settings.semesterStartDate;
@@ -71,9 +72,32 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
     [selectedDateString, slots, slotOverrides],
   );
 
+  const daySpanHours = useMemo(() => {
+    if (todaysSlots.length === 0) return 0;
+
+    let minStart = 24 * 60; // Max possible minutes
+    let maxEnd = 0;
+
+    todaysSlots.forEach((slot) => {
+      const [h, m] = slot.startTime.split(":").map(Number);
+      const startMins = h * 60 + m;
+      const endMins = startMins + slot.durationMinutes;
+
+      if (startMins < minStart) minStart = startMins;
+      if (endMins > maxEnd) maxEnd = endMins;
+    });
+
+    if (maxEnd <= minStart) return 0;
+
+    // Round to 1 decimal place if needed
+    const hours = (maxEnd - minStart) / 60;
+    return Math.round(hours * 10) / 10;
+  }, [todaysSlots]);
+
   const [selectedSlot, setSelectedSlot] = useState<TimetableSlot | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleLongPress = (slot: TimetableSlot) => {
     setSelectedSlot(slot);
@@ -131,7 +155,20 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
         slotId: selectedSlot.id,
         subjectId: selectedSlot.subjectId,
         status,
+        date: selectedDateString,
       });
+    } catch (error) {
+      Alert.alert("Error", (error as Error).message);
+    } finally {
+      setModalVisible(false);
+      setSelectedSlot(null);
+    }
+  };
+
+  const handleUnmark = async () => {
+    if (!selectedSlot) return;
+    try {
+      await unmarkAttendance(selectedSlot.id, selectedDateString);
     } catch (error) {
       Alert.alert("Error", (error as Error).message);
     } finally {
@@ -160,14 +197,14 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
             <Pressable style={styles.navButton} onPress={goToPreviousDay}>
               <Text style={styles.navButtonText}>←</Text>
             </Pressable>
-            <View style={styles.dateInfo}>
+            <Pressable style={styles.dateInfo} onPress={() => setShowDatePicker(!showDatePicker)}>
               <Text style={styles.dayLabel}>
                 {formatDateLabel(selectedDate)}
               </Text>
               <Text style={styles.slotCount}>
-                {isBeforeSemester ? 0 : todaysSlots.length} hour{(isBeforeSemester || todaysSlots.length !== 1) ? "s" : ""}
+                {isBeforeSemester ? 0 : daySpanHours} hour{(isBeforeSemester || daySpanHours !== 1) ? "s" : ""}
               </Text>
-            </View>
+            </Pressable>
             <Pressable style={styles.navButton} onPress={goToNextDay}>
               <Text style={styles.navButtonText}>→</Text>
             </Pressable>
@@ -182,7 +219,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
               style={styles.compactButton}
               onPress={() => navigation.navigate("FullTimetable")}
             >
-              <Text style={styles.compactButtonText}>Full timetable</Text>
+              <Text style={styles.compactButtonText}>Timetable</Text>
             </Pressable>
             <Pressable
               style={styles.iconButton}
@@ -193,6 +230,26 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
           </View>
         </View>
 
+        {showDatePicker && (
+          <View style={styles.datePickerContainer}>
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              maximumDate={new Date(2026, 11, 31)} // Dec 31, 2026
+              minimumDate={new Date(2026, 0, 1)} // Jan 1, 2026
+              onChange={(event, date) => {
+                setShowDatePicker(Platform.OS === "ios");
+                if (date) {
+                  // Force year to 2026
+                  const fixedDate = new Date(2026, date.getMonth(), date.getDate());
+                  setSelectedDate(fixedDate);
+                }
+              }}
+            />
+          </View>
+        )}
+
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Lectures</Text>
           {/* <Text style={styles.sectionSubtitle}>Long press to mark attendance</Text> */}
@@ -202,12 +259,15 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
           <View style={styles.semesterMessage}>
             <Text style={styles.semesterMessageTitle}>Classes haven't started yet</Text>
             <Text style={styles.semesterMessageText}>
-              Semester begins on {new Date(settings.semesterStartDate).toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
+              Semester begins on {(() => {
+                const [y, m, d] = settings.semesterStartDate.split("-").map(Number);
+                return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                });
+              })()}
             </Text>
           </View>
         ) : todaysSlots.length === 0 ? (
@@ -245,6 +305,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
         }}
         onSubmit={handleModalSubmit}
         onEdit={handleOpenEdit}
+        onUnmark={handleUnmark}
       />
       <EditSlotModal
         visible={editModalVisible}
@@ -285,6 +346,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
   },
+  datePickerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.md,
+  },
   navButton: {
     width: 36,
     height: 36,
@@ -302,6 +368,9 @@ const styles = StyleSheet.create({
   },
   dateInfo: {
     flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer" as any,
   },
   headerButtons: {
     flexDirection: "row",

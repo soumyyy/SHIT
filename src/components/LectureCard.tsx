@@ -40,25 +40,23 @@ export const LectureCard = ({
     style={({ pressed }) => [styles.container, pressed && styles.pressed]}
   >
     <View style={styles.content}>
-      <View style={styles.titleRow}>
-        <View style={styles.titleColumn}>
-          <Text style={styles.title}>
-            {title}
-            {room ? <Text style={styles.roomInline}> • {room}</Text> : null}
-          </Text>
-        </View>
-        <View style={styles.badgeRow}>
-          {status ? (
-            <View style={[styles.statusBadge, { borderColor: STATUS_COLORS[status] }]}>
-              <Text style={[styles.statusText, { color: STATUS_COLORS[status] }]}>
-                {STATUS_TEXT[status]}
-              </Text>
-            </View>
-          ) : null}
-          {rightElement ? <View style={styles.right}>{rightElement}</View> : null}
-        </View>
+      <View style={styles.leftColumn}>
+        <Text style={styles.title}>
+          {title}
+          {room ? <Text style={styles.roomInline}> • {room}</Text> : null}
+        </Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      <View style={styles.rightColumn}>
+        {status ? (
+          <View style={[styles.statusBadge, { borderColor: STATUS_COLORS[status] }]}>
+            <Text style={[styles.statusText, { color: STATUS_COLORS[status] }]}>
+              {STATUS_TEXT[status]}
+            </Text>
+          </View>
+        ) : null}
+        {rightElement ? <View style={styles.right}>{rightElement}</View> : null}
+      </View>
     </View>
   </Pressable>
 );
@@ -79,18 +77,15 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   content: {
-    gap: spacing.xs,
-  },
-  titleRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: spacing.md,
   },
-  titleColumn: {
+  leftColumn: {
     flex: 1,
+    gap: spacing.xs,
   },
-  badgeRow: {
+  rightColumn: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
@@ -113,7 +108,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radii.sm,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingTop: spacing.xs + 1,
+    paddingBottom: spacing.xs - 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   statusText: {
     fontWeight: "700",

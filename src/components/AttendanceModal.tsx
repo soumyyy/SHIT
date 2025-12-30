@@ -14,6 +14,7 @@ interface AttendanceModalProps {
   onClose: () => void;
   onSubmit: (status: AttendanceStatus) => Promise<void>;
   onEdit?: () => void;
+  onUnmark?: () => Promise<void>;
 }
 
 export const AttendanceModal = ({
@@ -24,6 +25,7 @@ export const AttendanceModal = ({
   onClose,
   onSubmit,
   onEdit,
+  onUnmark,
 }: AttendanceModalProps) => {
   const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>("present");
 
@@ -67,9 +69,18 @@ export const AttendanceModal = ({
                 <Pressable
                   key={value}
                   style={[styles.option, isSelected && styles.optionSelected]}
-                  onPress={() => {
-                    setSelectedStatus(value);
-                    handleSelect(value);
+                  onPress={async () => {
+                    if (isSelected && existingStatus === value) {
+                      // If clicking the already-selected status, unmark it
+                      if (onUnmark) {
+                        await onUnmark();
+                        onClose();
+                      }
+                    } else {
+                      // Otherwise, mark with the new status
+                      setSelectedStatus(value);
+                      await handleSelect(value);
+                    }
                   }}
                 >
                   <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>

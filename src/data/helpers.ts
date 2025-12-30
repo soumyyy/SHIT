@@ -8,6 +8,13 @@ export const getTodayDayOfWeek = (today: Date = new Date()): number => {
 
 export const getDayLabel = (dayOfWeek: number): string => DAYS[dayOfWeek] ?? "Day";
 
+export const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const formatTimeRange = (startTime: string, durationMinutes: number): string => {
   const [hours, minutes] = startTime.split(":").map(Number);
   const startDate = new Date();
@@ -39,7 +46,9 @@ export function getEffectiveSlots(
   overrides: SlotOverride[]
 ): EffectiveSlot[] {
   // Get day of week from date (0 = Monday)
-  const dateObj = new Date(date + "T00:00:00");
+  // Safely parse YYYY-MM-DD as local date
+  const [year, month, day] = date.split("-").map(Number);
+  const dateObj = new Date(year, month - 1, day);
   const dayOfWeek = (dateObj.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
 
   // Get overrides for this specific date
@@ -110,7 +119,8 @@ export function getEffectiveSlots(
  * Calculate semester end date from start date and number of weeks
  */
 export const calculateSemesterEndDate = (startDate: string, weeks: number): string => {
-  const start = new Date(startDate);
-  start.setDate(start.getDate() + (weeks * 7) - 1); // -1 because we include the start day
-  return start.toISOString().split('T')[0];
+  const [year, month, day] = startDate.split("-").map(Number);
+  const start = new Date(year, month - 1, day);
+  start.setDate(start.getDate() + weeks * 7 - 1); // -1 because we include the start day
+  return formatLocalDate(start);
 };

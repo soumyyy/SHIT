@@ -5,6 +5,7 @@ import { colors, spacing } from "@/constants/theme";
 import { AttendanceLog, AttendanceStatus, Settings, SlotOverride, Subject, TimetableSlot } from "@/data/models";
 import { mockSlots, mockSubjects } from "@/data/mockData";
 import { Storage } from "@/storage/storage";
+import { formatLocalDate } from "./helpers";
 
 interface AddSubjectPayload {
   id: string;
@@ -42,6 +43,7 @@ interface DataContextValue {
   importData: (subjects: Subject[], slots: TimetableSlot[]) => Promise<void>;
   updateSubject: (subject: Subject) => Promise<void>;
   deleteSubject: (id: string) => Promise<void>;
+  unmarkAttendance: (slotId: string, date?: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -51,7 +53,7 @@ const formatDate = (value?: string) => {
   if (value) {
     return value;
   }
-  return new Date().toISOString().split("T")[0];
+  return formatLocalDate(new Date());
 };
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
@@ -163,6 +165,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     [attendanceLogs, persistAttendance],
   );
 
+  const unmarkAttendance = useCallback(
+    async (slotId: string, date?: string) => {
+      const isoDate = formatDate(date);
+      const next = attendanceLogs.filter(
+        (log) => !(log.slotId === slotId && log.date === isoDate),
+      );
+      await persistAttendance(next);
+    },
+    [attendanceLogs, persistAttendance],
+  );
+
   const addSubject = useCallback(
     async ({ id, name, professor }: AddSubjectPayload) => {
       const normalizedId = id.trim().toUpperCase();
@@ -269,9 +282,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       importData,
       updateSubject,
       deleteSubject,
+      unmarkAttendance,
       refresh: load,
     }),
-    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load, updateSubject, deleteSubject],
+    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load, updateSubject, deleteSubject, unmarkAttendance],
   );
 
   if (loading) {

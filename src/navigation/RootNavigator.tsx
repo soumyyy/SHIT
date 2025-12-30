@@ -45,7 +45,7 @@ const TimetableStackNavigator = () => (
     <TimetableStack.Screen
       name="TimetableToday"
       component={TimetableTodayScreen}
-      options={{ title: "Today" }}
+      options={{ title: "Schedule" }}
     />
     <TimetableStack.Screen
       name="FullTimetable"

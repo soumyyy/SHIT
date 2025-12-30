@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { getEffectiveSlots, calculateSemesterEndDate } from '@/data/helpers';
+import { getEffectiveSlots, calculateSemesterEndDate, formatLocalDate } from '@/data/helpers';
 import { useData } from '@/data/DataContext';
 
 /**
@@ -23,7 +23,7 @@ export const useAutoAttendance = () => {
         currentDate.setHours(0, 0, 0, 0);
 
         while (currentDate <= now && currentDate <= endDate) {
-            const dateStr = currentDate.toISOString().split('T')[0];
+            const dateStr = formatLocalDate(currentDate);
 
             // Get all slots for this day
             const daySlots = getEffectiveSlots(dateStr, slots, slotOverrides);
@@ -31,8 +31,8 @@ export const useAutoAttendance = () => {
             for (const slot of daySlots) {
                 // Calculate when this lecture ended
                 const [hours, minutes] = slot.startTime.split(':').map(Number);
-                const lectureEnd = new Date(dateStr);
-                lectureEnd.setHours(hours, minutes + slot.durationMinutes, 0, 0);
+                const [y, m, d] = dateStr.split('-').map(Number);
+                const lectureEnd = new Date(y, m - 1, d, hours, minutes + slot.durationMinutes, 0, 0);
 
                 // Check if 6 hours have passed since lecture ended
                 if (lectureEnd < sixHoursAgo) {

@@ -67,15 +67,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [storedSubjects, storedSlots, storedAttendance] = await Promise.all([
+      const [storedSubjects, storedSlots, storedAttendance, storedOverrides] = await Promise.all([
         Storage.getSubjects(),
         Storage.getSlots(),
         Storage.getAttendanceLogs(),
+        Storage.getSlotOverrides(),
       ]);
 
       const normalizedSubjects: Subject[] = storedSubjects ?? mockSubjects;
       const normalizedSlots: TimetableSlot[] = storedSlots ?? mockSlots;
       const normalizedAttendance: AttendanceLog[] = storedAttendance ?? [];
+      const normalizedOverrides: SlotOverride[] = storedOverrides ?? [];
 
       if (!storedSubjects) {
         await Storage.saveSubjects(normalizedSubjects);
@@ -86,10 +88,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       if (!storedAttendance) {
         await Storage.saveAttendanceLogs(normalizedAttendance);
       }
+      if (!storedOverrides) {
+        await Storage.saveSlotOverrides(normalizedOverrides);
+      }
 
       setSubjects(normalizedSubjects);
       setSlots(normalizedSlots);
       setAttendanceLogs(normalizedAttendance);
+      setSlotOverrides(normalizedOverrides);
     } catch (error) {
       console.error("Failed to load data:", error);
       // If data is corrupted, reset to mock data
@@ -97,9 +103,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         await Storage.saveSubjects(mockSubjects);
         await Storage.saveSlots(mockSlots);
         await Storage.saveAttendanceLogs([]);
+        await Storage.saveSlotOverrides([]);
         setSubjects(mockSubjects);
         setSlots(mockSlots);
         setAttendanceLogs([]);
+        setSlotOverrides([]);
       } catch (resetError) {
         Alert.alert("Error", "Failed to load data. Please restart the app.");
       }
@@ -111,6 +119,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!loading) {
+      Storage.saveSlotOverrides(slotOverrides);
+    }
+  }, [slotOverrides, loading]);
 
   const persistSubjects = useCallback(async (next: Subject[]) => {
     setSubjects(next);
@@ -219,7 +233,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       id: Date.now().toString(),
     };
     setSlotOverrides((prev) => [...prev, newOverride]);
-    // TODO: Persist to AsyncStorage
   }, []);
 
   const value = useMemo<DataContextValue>(

@@ -81,6 +81,11 @@ export function getEffectiveSlots(
   dateOverrides
     .filter((o) => o.type === "added" && o.subjectId && o.startTime && o.durationMinutes)
     .forEach((override) => {
+      // Check if this added slot has been cancelled
+      if (cancelledSlotIds.includes(override.id)) {
+        return;
+      }
+
       effectiveSlots.push({
         id: override.id,
         subjectId: override.subjectId!,

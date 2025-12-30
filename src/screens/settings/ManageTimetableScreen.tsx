@@ -21,6 +21,7 @@ import { colors, layout, radii, spacing, typography } from "@/constants/theme";
 import { TimetableStackParamList } from "@/navigation/types";
 import { useData } from "@/data/DataContext";
 import { SubjectFormModal } from "@/components/SubjectFormModal";
+import { EditableSubjectRow } from "@/components/EditableSubjectRow";
 import { Subject } from "@/data/models";
 
 type Props = NativeStackScreenProps<TimetableStackParamList, "ManageTimetable">;
@@ -124,22 +125,12 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
 
 
     const renderSubjectItem = ({ item }: { item: Subject }) => (
-        <Pressable style={styles.subjectCard} onPress={() => handleEditSubject(item)}>
-            <View style={styles.subjectCardHeader}>
-                <View style={styles.subjectIdent}>
-                    <Text style={styles.subjectId}>{item.id}</Text>
-                    <Text style={styles.subjectNameCompact} numberOfLines={1}>
-                        {item.name}
-                    </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-            </View>
-            {item.professor && (
-                <Text style={styles.subjectProfessor} numberOfLines={1}>
-                    {item.professor}
-                </Text>
-            )}
-        </Pressable>
+        <EditableSubjectRow
+            id={item.id}
+            name={item.name}
+            professor={item.professor}
+            onPress={() => handleEditSubject(item)}
+        />
     );
 
     return (

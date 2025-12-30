@@ -87,7 +87,7 @@ export const SubjectFormModal = ({
                                     editable={!isEditing} // Lock ID when editing
                                     autoCapitalize="characters"
                                 />
-                                {isEditing && <Text style={styles.hint}>Subject ID cannot be changed. Delete and re-create if needed.</Text>}
+                                {/* {isEditing && <Text style={styles.hint}> </Text>} */}
                             </View>
 
                             <View style={styles.section}>

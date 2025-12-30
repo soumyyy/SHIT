@@ -66,6 +66,29 @@ export const layout = {
   screenPadding: spacing.md,
 };
 
+// Common reusable styles
+export const commonStyles = {
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    ...shadows.soft,
+  },
+  cardPressed: {
+    opacity: 0.7,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  surface: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    ...shadows.medium,
+  },
+};
+
 export const theme = {
   colors,
   spacing,
@@ -73,4 +96,5 @@ export const theme = {
   typography,
   shadows,
   layout,
+  commonStyles,
 };

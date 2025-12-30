@@ -49,13 +49,6 @@ interface DataContextValue {
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
 
-const formatDate = (value?: string) => {
-  if (value) {
-    return value;
-  }
-  return formatLocalDate(new Date());
-};
-
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [slots, setSlots] = useState<TimetableSlot[]>([]);
@@ -147,7 +140,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const markAttendance = useCallback(
     async ({ slotId, subjectId, status, date }: MarkAttendancePayload) => {
-      const isoDate = formatDate(date);
+      const isoDate = date || formatLocalDate(new Date());
       const filtered = attendanceLogs.filter(
         (log) => !(log.slotId === slotId && log.date === isoDate),
       );
@@ -167,7 +160,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const unmarkAttendance = useCallback(
     async (slotId: string, date?: string) => {
-      const isoDate = formatDate(date);
+      const isoDate = date || formatLocalDate(new Date());
       const next = attendanceLogs.filter(
         (log) => !(log.slotId === slotId && log.date === isoDate),
       );

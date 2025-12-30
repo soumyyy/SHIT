@@ -6,8 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, layout, radii, shadows, spacing, typography } from "@/constants/theme";
 import { useData } from "@/data/DataContext";
 import { AttendanceStackParamList } from "@/navigation/types";
-import { computeAttendance, projectSemesterCount } from "@/data/attendance";
-import { calculateSemesterEndDate, formatLocalDate } from "@/data/helpers";
+import { useAttendanceStats } from "@/hooks/useAttendanceStats";
+import { formatLocalDate } from "@/data/helpers";
 
 type Props = NativeStackScreenProps<AttendanceStackParamList, "SubjectAttendance">;
 
@@ -16,34 +16,13 @@ export const SubjectAttendanceScreen = ({ route }: Props) => {
     const { subjects, slots, attendanceLogs, slotOverrides, settings } = useData();
     const subject = subjects.find((item) => item.id === subjectId);
 
-    // Stats
-    const stats = useMemo(() =>
-        computeAttendance(attendanceLogs, subjectId, settings.minAttendanceThreshold),
-        [attendanceLogs, subjectId, settings.minAttendanceThreshold]
-    );
-
-    const safeToMissInfo = useMemo(() => {
-        const projectedTotal = projectSemesterCount(
-            subjectId,
-            slots,
-            slotOverrides,
-            settings.semesterStartDate,
-            calculateSemesterEndDate(settings.semesterStartDate, settings.semesterWeeks)
-        );
-
-        // Simple formula:
-        // Need to attend: ceil(total * 80%) classes minimum
-        // Can miss: total - minimum required
-        const minRequired = Math.ceil(projectedTotal * settings.minAttendanceThreshold);
-        const maxMissable = projectedTotal - minRequired;
-        const alreadyMissed = stats.total - stats.present;
-        const safeToMiss = maxMissable - alreadyMissed;
-
-        return {
-            safeToMiss,
-            projectedTotal
-        };
-    }, [subjectId, slots, slotOverrides, settings, stats]);
+    const { stats, safeToMiss, totalProjected } = useAttendanceStats({
+        subjectId,
+        attendanceLogs,
+        slots,
+        slotOverrides,
+        settings,
+    });
 
     // History (Past Logs + Past Cancellations)
     const history = useMemo(() => {
@@ -127,9 +106,9 @@ export const SubjectAttendanceScreen = ({ route }: Props) => {
                         {stats.present} / {stats.total} classes attended
                     </Text>
                     <Text style={styles.hoursPerWeek}>
-                        {safeToMissInfo.safeToMiss >= 0
-                            ? `You can miss ${safeToMissInfo.safeToMiss} more classes safely`
-                            : `You are over the limit by ${Math.abs(safeToMissInfo.safeToMiss)} classes`}
+                        {safeToMiss >= 0
+                            ? `You can miss ${safeToMiss} more classes safely`
+                            : `You are over the limit by ${Math.abs(safeToMiss)} classes`}
                     </Text>
                 </View>
 

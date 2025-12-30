@@ -5,43 +5,30 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { SubjectRow } from "@/components/SubjectRow";
 import { colors, layout, spacing, typography } from "@/constants/theme";
-import { computeAttendance, projectSemesterCount } from "@/data/attendance";
-import { calculateSemesterEndDate } from "@/data/helpers";
 import { useData } from "@/data/DataContext";
 import { useTabSwipe } from "@/hooks/useTabSwipe";
+import { useAttendanceStats } from "@/hooks/useAttendanceStats";
 import { AttendanceStackParamList } from "@/navigation/types";
 
 type AttendanceScreenProps = NativeStackScreenProps<AttendanceStackParamList, "AttendanceList">;
 
 export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
   const { subjects, attendanceLogs, slots, slotOverrides, settings } = useData();
-  // Cast navigation to any for swipe handler which expects tab nav structure compatibility
   const swipeHandlers = useTabSwipe(navigation as any, "AttendanceTab");
 
   const subjectData = useMemo(() => {
     return subjects.map(subject => {
-      const stats = computeAttendance(attendanceLogs, subject.id, settings.minAttendanceThreshold);
-
-      const totalProjected = projectSemesterCount(
-        subject.id,
+      const { stats, safeToMiss } = useAttendanceStats({
+        subjectId: subject.id,
+        attendanceLogs,
         slots,
         slotOverrides,
-        settings.semesterStartDate,
-        calculateSemesterEndDate(settings.semesterStartDate, settings.semesterWeeks)
-      );
-
-      // Simple formula:
-      // Need to attend: ceil(total * 80%) classes minimum
-      // Can miss: total - minimum required
-      const minRequired = Math.ceil(totalProjected * settings.minAttendanceThreshold);
-      const maxMissable = totalProjected - minRequired;
-      const alreadyMissed = stats.total - stats.present; // This is count of absent logs
-      const safeToMiss = maxMissable - alreadyMissed;
+        settings,
+      });
 
       return {
         subject,
         stats,
-        projectedTotal: totalProjected,
         safeToMiss
       };
     }).sort((a, b) => a.stats.percentage - b.stats.percentage);

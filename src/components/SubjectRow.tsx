@@ -1,5 +1,4 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-
 import { colors, radii, shadows, spacing, typography } from "@/constants/theme";
 
 interface SubjectRowProps {
@@ -35,7 +34,7 @@ export const SubjectRow = ({ title, percentage, present, total, safeToMiss, minA
             <Text style={styles.statsValue}>{present}</Text>/{total} attended
           </Text>
 
-          <View style={styles.missContainer}>
+          <View>
             {safeToMiss >= 0 ? (
               <Text style={styles.safeText}>Can miss {safeToMiss}</Text>
             ) : (
@@ -140,9 +139,6 @@ const styles = StyleSheet.create({
   statsValue: {
     color: colors.textPrimary,
     fontWeight: '700',
-  },
-  missContainer: {
-    // No background, just text
   },
   safeText: {
     color: colors.textMuted,

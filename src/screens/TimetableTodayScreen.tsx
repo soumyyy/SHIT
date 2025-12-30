@@ -1,34 +1,78 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AttendanceModal } from "@/components/AttendanceModal";
 import { LectureCard } from "@/components/LectureCard";
 import { colors, layout, spacing, typography } from "@/constants/theme";
 import { formatTimeRange, getDayLabel, getTodayDayOfWeek } from "@/data/helpers";
-import { mockSlots, mockSubjects } from "@/data/mockData";
+import { TimetableSlot } from "@/data/models";
+import { useData } from "@/data/DataContext";
+import { useTabSwipe } from "@/hooks/useTabSwipe";
 import { TimetableStackParamList } from "@/navigation/types";
 
 type Props = NativeStackScreenProps<TimetableStackParamList, "TimetableToday">;
 
+const formatDateLabel = (date: Date) =>
+  new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+
 export const TimetableTodayScreen = ({ navigation }: Props) => {
-  const dayOfWeek = getTodayDayOfWeek();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const dayOfWeek = getTodayDayOfWeek(currentDate);
+  const { slots, subjects, markAttendance } = useData();
+  const swipeResponder = useTabSwipe(navigation, "TimetableTab");
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const subjectsById = useMemo(
-    () => new Map(mockSubjects.map((subject) => [subject.id, subject])),
-    [],
+    () => new Map(subjects.map((subject) => [subject.id, subject])),
+    [subjects],
   );
 
   const todaysSlots = useMemo(
     () =>
-      mockSlots
+      slots
         .filter((slot) => slot.dayOfWeek === dayOfWeek)
         .sort((a, b) => a.startTime.localeCompare(b.startTime)),
-    [dayOfWeek],
+    [dayOfWeek, slots],
   );
 
+  const [selectedSlot, setSelectedSlot] = useState<TimetableSlot | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleLongPress = (slot: TimetableSlot) => {
+    setSelectedSlot(slot);
+    setModalVisible(true);
+  };
+
+  const handleModalSubmit = async (status: "present" | "absent") => {
+    if (!selectedSlot) return;
+    try {
+      await markAttendance({
+        slotId: selectedSlot.id,
+        subjectId: selectedSlot.subjectId,
+        status,
+      });
+    } catch (error) {
+      Alert.alert("Error", (error as Error).message);
+    } finally {
+      setModalVisible(false);
+      setSelectedSlot(null);
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]} {...swipeResponder.panHandlers}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -36,7 +80,9 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
       >
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.dayLabel}>{getDayLabel(dayOfWeek)}</Text>
+            <Text style={styles.dayLabel}>
+              {getDayLabel(dayOfWeek)} • {formatDateLabel(currentDate)}
+            </Text>
             <Text style={styles.slotCount}>
               {todaysSlots.length} slot{todaysSlots.length === 1 ? "" : "s"}
             </Text>
@@ -50,8 +96,8 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today&apos;s lectures</Text>
-          <Text style={styles.sectionSubtitle}>Tap for overview • long-press to log</Text>
+          <Text style={styles.sectionTitle}>Lectures</Text>
+          <Text style={styles.sectionSubtitle}>Long press to mark attendance</Text>
         </View>
 
         {todaysSlots.length === 0 ? (
@@ -68,9 +114,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
                 onPress={() =>
                   navigation.navigate("SubjectOverview", { subjectId: slot.subjectId })
                 }
-                onLongPress={() => {
-                  // TODO: open attendance modal
-                }}
+                onLongPress={() => handleLongPress(slot)}
                 rightElement={
                   <View style={styles.quickAction}>
                     <Text style={styles.quickActionText}>Mark</Text>
@@ -81,6 +125,16 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
           })
         )}
       </ScrollView>
+      <AttendanceModal
+        visible={modalVisible}
+        slot={selectedSlot}
+        subject={selectedSlot ? subjectsById.get(selectedSlot.subjectId) : undefined}
+        onClose={() => {
+          setModalVisible(false);
+          setSelectedSlot(null);
+        }}
+        onSubmit={handleModalSubmit}
+      />
     </SafeAreaView>
   );
 };

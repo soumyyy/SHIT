@@ -1,7 +1,6 @@
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export const getTodayDayOfWeek = (): number => {
-  const today = new Date();
+export const getTodayDayOfWeek = (today: Date = new Date()): number => {
   const day = today.getDay();
   // Date.getDay(): 0 = Sunday ... 6 = Saturday. Convert to 0 = Monday.
   return day === 0 ? 6 : day - 1;

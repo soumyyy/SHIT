@@ -43,10 +43,10 @@ export const SubjectRow = ({ title, subtitle, percentage, highlight }: SubjectRo
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     ...shadows.soft,
@@ -59,24 +59,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   textBlock: {
     flex: 1,
   },
   title: {
     color: colors.textPrimary,
-    fontSize: typography.body,
+    fontSize: typography.small,
     fontWeight: "600",
   },
   subtitle: {
     color: colors.textSecondary,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   badge: {
     backgroundColor: colors.cardMuted,
     borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
   badgeDanger: {
@@ -91,10 +91,10 @@ const styles = StyleSheet.create({
     color: "#FFF",
   },
   progressTrack: {
-    height: 6,
+    height: 4,
     borderRadius: radii.pill,
     backgroundColor: colors.border,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     overflow: "hidden",
   },
   progressFill: {

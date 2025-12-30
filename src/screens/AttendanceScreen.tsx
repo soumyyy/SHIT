@@ -1,24 +1,32 @@
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 
 import { SubjectRow } from "@/components/SubjectRow";
 import { colors, layout, radii, shadows, spacing, typography } from "@/constants/theme";
 import { computeAttendance } from "@/data/attendance";
-import { mockAttendanceLogs, mockSubjects } from "@/data/mockData";
+import { useData } from "@/data/DataContext";
+import { useTabSwipe } from "@/hooks/useTabSwipe";
+import { RootTabParamList } from "@/navigation/types";
 
 const MIN_ATTENDANCE = 0.8;
 
-export const AttendanceScreen = () => {
+type AttendanceScreenProps = BottomTabScreenProps<RootTabParamList, "AttendanceTab">;
+
+export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
+  const { subjects, attendanceLogs } = useData();
+  const swipeResponder = useTabSwipe(navigation, "AttendanceTab");
+
   const statsBySubject = useMemo(() => {
-    const entries = mockSubjects.map((subject) => [
+    const entries = subjects.map((subject) => [
       subject.id,
-      computeAttendance(mockAttendanceLogs, subject.id, MIN_ATTENDANCE),
+      computeAttendance(attendanceLogs, subject.id, MIN_ATTENDANCE),
     ]);
     return Object.fromEntries(entries);
-  }, []);
+  }, [attendanceLogs, subjects]);
 
-  const orderedSubjects = [...mockSubjects].sort(
+  const orderedSubjects = [...subjects].sort(
     (a, b) => statsBySubject[a.id].percentage - statsBySubject[b.id].percentage,
   );
 
@@ -37,33 +45,30 @@ export const AttendanceScreen = () => {
     aggregate.total === 0 ? 100 : (aggregate.present / aggregate.total) * 100;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.backdrop} />
+    <SafeAreaView style={styles.safeArea} edges={["top"]} {...swipeResponder.panHandlers}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
-          <Text style={styles.heroLabel}>Attendance pulse</Text>
-          <Text style={styles.heroTitle}>{overallPercentage.toFixed(0)}%</Text>
-          <Text style={styles.heroSubtitle}>
-            {aggregate.total === 0
-              ? "No logs yet — start tracking from the timetable tab."
-              : `${aggregate.present} / ${aggregate.total} sessions marked`}
-          </Text>
+          <View>
+            <Text style={styles.heroLabel}>Attendance</Text>
+            <Text style={styles.heroTitle}>{overallPercentage.toFixed(0)}%</Text>
+            <Text style={styles.heroSubtitle}>
+              {aggregate.total === 0
+                ? "No logs yet."
+                : `${aggregate.present}/${aggregate.total} marked`}
+            </Text>
+          </View>
           <View style={styles.heroStats}>
             <View style={styles.heroChip}>
-              <Text style={styles.heroChipValue}>{mockSubjects.length}</Text>
+              <Text style={styles.heroChipValue}>{subjects.length}</Text>
               <Text style={styles.heroChipLabel}>Subjects</Text>
             </View>
             <View style={styles.heroChip}>
               <Text style={styles.heroChipValue}>{aggregate.lowCount}</Text>
               <Text style={styles.heroChipLabel}>Below 80%</Text>
-            </View>
-            <View style={styles.heroChip}>
-              <Text style={styles.heroChipValue}>{(MIN_ATTENDANCE * 100).toFixed(0)}%</Text>
-              <Text style={styles.heroChipLabel}>Threshold</Text>
             </View>
           </View>
         </View>
@@ -101,32 +106,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 220,
-    backgroundColor: colors.backgroundSecondary,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-  },
   container: {
     flex: 1,
   },
   content: {
     paddingHorizontal: layout.screenPadding,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xl,
+    paddingTop: spacing.lg,
   },
   hero: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
+    borderRadius: radii.md,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     ...shadows.medium,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   heroLabel: {
     color: colors.textMuted,
@@ -137,38 +135,38 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.accent,
-    fontSize: typography.display,
+    fontSize: typography.heading,
     fontWeight: "800",
-    marginTop: spacing.sm,
   },
   heroSubtitle: {
     color: colors.textSecondary,
     marginTop: spacing.xs,
-    marginBottom: spacing.lg,
   },
   heroStats: {
     flexDirection: "row",
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   heroChip: {
-    flex: 1,
     backgroundColor: colors.card,
     borderRadius: radii.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    alignItems: "flex-start",
+    alignItems: "center",
+    minWidth: 80,
   },
   heroChipValue: {
     color: colors.textPrimary,
-    fontSize: typography.heading,
-    fontWeight: "800",
+    fontSize: typography.body,
+    fontWeight: "700",
   },
   heroChipLabel: {
     color: colors.textSecondary,
-    fontSize: typography.small,
-    marginTop: spacing.xs,
+    fontSize: typography.tiny,
+    marginTop: spacing.xs / 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   sectionTitle: {
     color: colors.textPrimary,

@@ -1,13 +1,14 @@
 import { BottomTabBar, BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { BlurView } from "expo-blur";
 import { StyleSheet, View } from "react-native";
 
 import { colors, radii, shadows, spacing } from "@/constants/theme";
 
 export const GlassTabBar = (props: BottomTabBarProps) => (
   <View pointerEvents="box-none" style={styles.wrapper}>
-    <View style={styles.container}>
+    <BlurView intensity={40} tint="light" style={styles.container}>
       <BottomTabBar {...props} style={styles.tabBar} />
-    </View>
+    </BlurView>
   </View>
 );
 
@@ -22,9 +23,7 @@ const styles = StyleSheet.create({
   },
   container: {
     borderRadius: 24,
-    backgroundColor: colors.glass,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
+    overflow: "hidden",
     ...shadows.soft,
   },
   tabBar: {

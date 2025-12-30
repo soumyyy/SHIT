@@ -27,15 +27,15 @@ export const LectureCard = ({
   >
     <View style={styles.content}>
       <View style={styles.titleRow}>
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.titleColumn}>
+          <Text style={styles.title}>
+            {title}
+            {room ? <Text style={styles.roomInline}> • {room}</Text> : null}
+          </Text>
+        </View>
         {rightElement ? <View style={styles.right}>{rightElement}</View> : null}
       </View>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-      {room ? (
-        <View style={styles.roomPill}>
-          <Text style={styles.roomLabel}>{room}</Text>
-        </View>
-      ) : null}
     </View>
   </Pressable>
 );
@@ -43,10 +43,10 @@ export const LectureCard = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    borderRadius: radii.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     ...shadows.soft,
@@ -56,38 +56,32 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   content: {
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: spacing.md,
+  },
+  titleColumn: {
+    flex: 1,
   },
   title: {
     color: colors.textPrimary,
-    fontSize: typography.subheading,
+    fontSize: typography.body,
+    fontWeight: "600",
+  },
+  roomInline: {
+    color: colors.textSecondary,
+    fontSize: typography.tiny,
     fontWeight: "600",
   },
   subtitle: {
     color: colors.textSecondary,
-    fontSize: typography.body,
+    fontSize: typography.small,
   },
   right: {
     marginLeft: spacing.md,
-  },
-  roomPill: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.cardMuted,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  roomLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.small,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
   },
 });

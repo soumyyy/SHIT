@@ -7,19 +7,20 @@ import { DaySection } from "@/components/DaySection";
 import { LectureCard } from "@/components/LectureCard";
 import { colors, layout, radii, shadows, spacing, typography } from "@/constants/theme";
 import { formatTimeRange, getDayLabel } from "@/data/helpers";
-import { mockSlots, mockSubjects } from "@/data/mockData";
+import { useData } from "@/data/DataContext";
 import { TimetableStackParamList } from "@/navigation/types";
 
 type Props = NativeStackScreenProps<TimetableStackParamList, "SubjectOverview">;
 
 export const SubjectOverviewScreen = ({ route }: Props) => {
   const { subjectId } = route.params;
-  const subject = mockSubjects.find((item) => item.id === subjectId);
+  const { subjects, slots } = useData();
+  const subject = subjects.find((item) => item.id === subjectId);
 
   const groupedSlots = useMemo(() => {
-    const slots = mockSlots.filter((slot) => slot.subjectId === subjectId);
-    const groups: Record<number, typeof slots> = {};
-    slots.forEach((slot) => {
+    const subjectSlots = slots.filter((slot) => slot.subjectId === subjectId);
+    const groups: Record<number, typeof subjectSlots> = {};
+    subjectSlots.forEach((slot) => {
       if (!groups[slot.dayOfWeek]) {
         groups[slot.dayOfWeek] = [];
       }
@@ -45,11 +46,10 @@ export const SubjectOverviewScreen = ({ route }: Props) => {
     );
   }
 
-  const totalSlots = mockSlots.filter((slot) => slot.subjectId === subjectId).length;
+  const totalSlots = slots.filter((slot) => slot.subjectId === subjectId).length;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.backdrop} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -100,19 +100,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 220,
-    backgroundColor: colors.backgroundSecondary,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-  },
   content: {
     paddingHorizontal: layout.screenPadding,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xl,
+    paddingTop: spacing.lg,
   },
   hero: {
     backgroundColor: colors.surface,

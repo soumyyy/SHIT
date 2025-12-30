@@ -62,7 +62,7 @@ export const shadows = {
 };
 
 export const layout = {
-  screenPadding: spacing.lg,
+  screenPadding: spacing.md,
 };
 
 export const theme = {

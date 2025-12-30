@@ -40,6 +40,7 @@ interface DataContextValue {
   addSlot: (payload: AddSlotPayload) => Promise<void>;
   updateSettings: (settings: Partial<Settings>) => Promise<void>;
   addSlotOverride: (override: Omit<SlotOverride, "id">) => Promise<void>;
+  importData: (subjects: Subject[], slots: TimetableSlot[]) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -235,6 +236,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setSlotOverrides((prev) => [...prev, newOverride]);
   }, []);
 
+  const importData = useCallback(async (newSubjects: Subject[], newSlots: TimetableSlot[]) => {
+    await persistSubjects(newSubjects);
+    await persistSlots(newSlots);
+  }, [persistSubjects, persistSlots]);
+
   const value = useMemo<DataContextValue>(
     () => ({
       subjects,
@@ -248,9 +254,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       addSlot,
       updateSettings,
       addSlotOverride,
+      importData,
       refresh: load,
     }),
-    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, load],
+    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load],
   );
 
   if (loading) {

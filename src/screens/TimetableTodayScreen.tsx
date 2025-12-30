@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import { AttendanceModal } from "@/components/AttendanceModal";
 import { EditSlotModal } from "@/components/EditSlotModal";
@@ -183,6 +184,12 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
             >
               <Text style={styles.compactButtonText}>Full timetable</Text>
             </Pressable>
+            <Pressable
+              style={styles.iconButton}
+              onPress={() => navigation.navigate("ManageTimetable")}
+            >
+              <Ionicons name="settings-sharp" size={20} color={colors.textSecondary} />
+            </Pressable>
           </View>
         </View>
 
@@ -214,7 +221,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
             return (
               <LectureCard
                 key={slot.id}
-                title={subject?.name ?? "Subject"}
+                title={subject?.id ?? "Subject"}
                 subtitle={formatTimeRange(slot.startTime, slot.durationMinutes)}
                 room={slot.room || subject?.defaultRoom}
                 status={attendanceStatus ?? null}
@@ -340,6 +347,16 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     fontWeight: "700",
     letterSpacing: 0.5,
+  },
+  iconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.glass,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
   sectionHeader: {
     marginBottom: spacing.md,

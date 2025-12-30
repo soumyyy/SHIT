@@ -6,6 +6,7 @@ import { enableScreens } from "react-native-screens";
 import { colors } from "@/constants/theme";
 import { AttendanceScreen } from "@/screens/AttendanceScreen";
 import { FullTimetableScreen } from "@/screens/FullTimetableScreen";
+import { ManageTimetableScreen } from "@/screens/settings/ManageTimetableScreen";
 import { SubjectOverviewScreen } from "@/screens/SubjectOverviewScreen";
 import { SubjectAttendanceScreen } from "@/screens/SubjectAttendanceScreen";
 import { TimetableTodayScreen } from "@/screens/TimetableTodayScreen";
@@ -55,6 +56,11 @@ const TimetableStackNavigator = () => (
       name="SubjectOverview"
       component={SubjectOverviewScreen}
       options={{ title: "Subject Overview" }}
+    />
+    <TimetableStack.Screen
+      name="ManageTimetable"
+      component={ManageTimetableScreen}
+      options={{ title: "Manage Timetable" }}
     />
   </TimetableStack.Navigator>
 );

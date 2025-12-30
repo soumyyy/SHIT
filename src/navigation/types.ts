@@ -4,6 +4,7 @@ export type TimetableStackParamList = {
   SubjectOverview: {
     subjectId: string;
   };
+  ManageTimetable: undefined;
 };
 
 export type RootTabParamList = {

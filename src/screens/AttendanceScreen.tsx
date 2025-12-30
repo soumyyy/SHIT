@@ -50,7 +50,7 @@ export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
   }, [subjects, attendanceLogs, slots, slotOverrides, settings]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom", "left", "right"]}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -66,7 +66,7 @@ export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
           {subjectData.map(({ subject, stats, safeToMiss }) => (
             <SubjectRow
               key={subject.id}
-              title={subject.name}
+              title={subject.id}
               percentage={stats.percentage}
               present={stats.present}
               total={stats.total}

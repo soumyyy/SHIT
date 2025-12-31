@@ -9,7 +9,7 @@ import { AttendanceModal } from "@/components/AttendanceModal";
 import { EditSlotModal } from "@/components/EditSlotModal";
 import { LectureCard } from "@/components/LectureCard";
 import { colors, layout, radii, spacing, typography } from "@/constants/theme";
-import { formatLocalDate, formatTimeRange, getDayLabel, getEffectiveSlots, getTodayDayOfWeek } from "@/data/helpers";
+import { formatLocalDate, formatTimeRange, getDayLabel, getEffectiveSlots, getTodayDayOfWeek, hasReachedLectureLimit } from "@/data/helpers";
 import { TimetableSlot } from "@/data/models";
 import { useData } from "@/data/DataContext";
 import { useTabSwipe } from "@/hooks/useTabSwipe";
@@ -68,8 +68,22 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   );
 
   const todaysSlots = useMemo(
-    () => getEffectiveSlots(selectedDateString, slots, slotOverrides),
-    [selectedDateString, slots, slotOverrides],
+    () => {
+      const effectiveSlots = getEffectiveSlots(selectedDateString, slots, slotOverrides);
+
+      // Filter out subjects that have reached their lecture limit
+      return effectiveSlots.filter(slot => {
+        const hasReached = hasReachedLectureLimit(
+          slot.subjectId,
+          slots,
+          slotOverrides,
+          settings.semesterStartDate,
+          selectedDateString
+        );
+        return !hasReached;
+      });
+    },
+    [selectedDateString, slots, slotOverrides, settings.semesterStartDate],
   );
 
   const daySpanHours = useMemo(() => {

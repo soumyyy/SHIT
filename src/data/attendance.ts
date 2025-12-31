@@ -27,8 +27,10 @@ export const computeAttendance = (
 
 /**
  * Calculate total number of slots for a subject in the entire semester
+ * Respects lecture limits (15/30/45 based on weekly frequency)
  */
 import { SlotOverride, TimetableSlot } from "./models";
+import { getSubjectLectureLimit } from "./helpers";
 
 export const projectSemesterCount = (
   subjectId: string,
@@ -38,11 +40,14 @@ export const projectSemesterCount = (
   endDateStr: string,
   untilDateStr?: string
 ): number => {
+  // Get the lecture limit for this subject
+  const limit = getSubjectLectureLimit(subjectId, regularSlots);
+
   let count = 0;
   const start = new Date(startDateStr);
   const end = new Date(endDateStr);
   const limitDateStr = untilDateStr || endDateStr;
-  const limit = new Date(limitDateStr);
+  const limitDate = new Date(limitDateStr);
 
   // Validate dates
   if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
@@ -63,10 +68,10 @@ export const projectSemesterCount = (
   const currentDate = new Date(start);
   currentDate.setHours(12, 0, 0, 0);
 
-  // We iterate until the lesser of 'end' and 'limit'
-  const effectiveEnd = limit < end ? limit : end;
+  // We iterate until the lesser of 'end' and 'limitDate'
+  const effectiveEnd = limitDate < end ? limitDate : end;
 
-  while (currentDate <= effectiveEnd) {
+  while (currentDate <= effectiveEnd && count < limit) {
     const dateString = currentDate.toISOString().split("T")[0];
 
     // JS Day: 0=Sun, 1=Mon...
@@ -85,7 +90,11 @@ export const projectSemesterCount = (
 
     // Add regular slots that are NOT cancelled
     const activeRegulars = dayRegularSlots.filter(s => !cancelledSlotIds.includes(s.id));
-    count += activeRegulars.length;
+    const toAdd = Math.min(activeRegulars.length, limit - count);
+    count += toAdd;
+
+    // Stop if we've reached the limit
+    if (count >= limit) break;
 
     // 3. Added slots for this subject on this date
     const addedSlots = dayOverrides.filter(o => o.type === "added" && o.subjectId === subjectId);
@@ -94,7 +103,11 @@ export const projectSemesterCount = (
       .map(o => o.originalSlotId);
 
     const activeAdded = addedSlots.filter(s => !addedButCancelledIds.includes(s.id));
-    count += activeAdded.length;
+    const toAddExtra = Math.min(activeAdded.length, limit - count);
+    count += toAddExtra;
+
+    // Stop if we've reached the limit
+    if (count >= limit) break;
 
     currentDate.setDate(currentDate.getDate() + 1);
   }

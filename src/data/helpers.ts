@@ -124,3 +124,73 @@ export const calculateSemesterEndDate = (startDate: string, weeks: number): stri
   start.setDate(start.getDate() + weeks * 7 - 1); // -1 because we include the start day
   return formatLocalDate(start);
 };
+
+/**
+ * Calculate how many times per week a subject occurs
+ */
+export const getSubjectWeeklyFrequency = (
+  subjectId: string,
+  slots: TimetableSlot[]
+): number => {
+  const uniqueDays = new Set(
+    slots.filter(s => s.subjectId === subjectId).map(s => s.dayOfWeek)
+  );
+  return uniqueDays.size;
+};
+
+/**
+ * Calculate target total lectures for a subject (15/30/45 based on weekly frequency)
+ */
+export const getSubjectLectureLimit = (
+  subjectId: string,
+  slots: TimetableSlot[]
+): number => {
+  const frequency = getSubjectWeeklyFrequency(subjectId, slots);
+  return frequency * 15; // 15 weeks in semester
+};
+
+/**
+ * Count actual lectures (excluding cancellations) for a subject in a date range
+ */
+export const countActualLectures = (
+  subjectId: string,
+  slots: TimetableSlot[],
+  slotOverrides: SlotOverride[],
+  startDate: string,
+  endDate: string
+): number => {
+  let count = 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const current = new Date(start);
+
+  while (current <= end) {
+    const dateStr = formatLocalDate(current);
+    const effectiveSlots = getEffectiveSlots(dateStr, slots, slotOverrides);
+
+    // Count non-cancelled slots for this subject
+    const subjectSlots = effectiveSlots.filter(
+      s => s.subjectId === subjectId && s.overrideType !== 'cancelled'
+    );
+    count += subjectSlots.length;
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
+};
+
+/**
+ * Check if a subject has reached its lecture limit
+ */
+export const hasReachedLectureLimit = (
+  subjectId: string,
+  slots: TimetableSlot[],
+  slotOverrides: SlotOverride[],
+  semesterStartDate: string,
+  currentDate: string
+): boolean => {
+  const limit = getSubjectLectureLimit(subjectId, slots);
+  const actual = countActualLectures(subjectId, slots, slotOverrides, semesterStartDate, currentDate);
+  return actual >= limit;
+};

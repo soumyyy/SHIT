@@ -11,7 +11,7 @@ import { computeAttendance, projectSemesterCount } from "@/data/attendance";
 import { calculateSemesterEndDate } from "@/data/helpers";
 import { AttendanceStackParamList } from "@/navigation/types";
 
-type AttendanceScreenProps = NativeStackScreenProps<AttendanceStackParamList, "AttendanceList">;
+type AttendanceScreenProps = NativeStackScreenProps<AttendanceStackParamList, "List">;
 
 export const AttendanceScreen = ({ navigation }: AttendanceScreenProps) => {
   const { subjects, attendanceLogs, slots, slotOverrides, settings } = useData();

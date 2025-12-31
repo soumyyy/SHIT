@@ -13,7 +13,7 @@ export type RootTabParamList = {
 };
 
 export type AttendanceStackParamList = {
-  AttendanceList: undefined;
+  List: undefined;
   SubjectAttendance: {
     subjectId: string;
   };

@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { colors, radii, shadows, spacing, typography } from "@/constants/theme";
 
@@ -13,6 +14,7 @@ interface LectureCardProps {
   rightElement?: ReactNode;
   onPress?: () => void;
   onLongPress?: () => void;
+  onDelete?: () => void;
 }
 
 const STATUS_COLORS: Record<Exclude<LectureStatus, null>, string> = {
@@ -33,6 +35,7 @@ export const LectureCard = ({
   rightElement,
   onPress,
   onLongPress,
+  onDelete,
 }: LectureCardProps) => (
   <Pressable
     onPress={onPress}
@@ -54,6 +57,11 @@ export const LectureCard = ({
               {STATUS_TEXT[status]}
             </Text>
           </View>
+        ) : null}
+        {onDelete && status ? (
+          <Pressable onPress={onDelete} style={styles.deleteButton}>
+            <Ionicons name="trash-outline" size={18} color={colors.danger} />
+          </Pressable>
         ) : null}
         {rightElement ? <View style={styles.right}>{rightElement}</View> : null}
       </View>
@@ -116,6 +124,10 @@ const styles = StyleSheet.create({
   statusText: {
     fontWeight: "700",
     fontSize: typography.small,
+  },
+  deleteButton: {
+    padding: spacing.xs,
+    marginLeft: spacing.xs,
   },
   right: {
     marginLeft: spacing.md,

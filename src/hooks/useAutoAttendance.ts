@@ -18,9 +18,16 @@ export const useAutoAttendance = () => {
         const semesterEnd = calculateSemesterEndDate(settings.semesterStartDate, settings.semesterWeeks);
         const endDate = new Date(semesterEnd);
 
-        // Iterate through the last 7 days
-        const currentDate = new Date(sevenDaysAgo);
-        currentDate.setHours(0, 0, 0, 0);
+        // Don't create attendance before semester starts
+        const semesterStart = new Date(settings.semesterStartDate);
+        semesterStart.setHours(0, 0, 0, 0);
+
+        // Start from the later of: 7 days ago OR semester start date
+        const startDate = new Date(Math.max(sevenDaysAgo.getTime(), semesterStart.getTime()));
+        startDate.setHours(0, 0, 0, 0);
+
+        // Iterate through valid semester days only
+        const currentDate = new Date(startDate);
 
         while (currentDate <= now && currentDate <= endDate) {
             const dateStr = formatLocalDate(currentDate);

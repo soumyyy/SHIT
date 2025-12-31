@@ -75,7 +75,7 @@ const AttendanceStackNavigator = () => (
     }}
   >
     <AttendanceStack.Screen
-      name="AttendanceList"
+      name="List"
       component={AttendanceScreen}
       options={{ headerShown: false }}
     />

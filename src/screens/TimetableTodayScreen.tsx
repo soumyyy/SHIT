@@ -289,6 +289,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
                   navigation.navigate("SubjectOverview", { subjectId: slot.subjectId })
                 }
                 onLongPress={() => handleLongPress(slot)}
+                onDelete={attendanceStatus ? () => unmarkAttendance(slot.id, selectedDateString) : undefined}
               />
             );
           })

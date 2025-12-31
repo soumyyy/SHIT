@@ -117,6 +117,29 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
         setLastTapTime(now);
     };
 
+    const handleClearAttendance = async () => {
+        Alert.alert(
+            "Clear Attendance Data",
+            "This will delete ALL attendance logs. This action cannot be undone.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Clear",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await AsyncStorage.setItem(STORAGE_KEYS.attendance, JSON.stringify([]));
+                            await refresh();
+                            Alert.alert("Success", "All attendance data cleared!");
+                        } catch (error) {
+                            Alert.alert("Error", "Failed to clear attendance data.");
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const handleAddSubject = () => {
         setEditingSubject(null);
         setSubjectModalVisible(true);
@@ -257,6 +280,9 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
                                 <Pressable style={styles.miniButton} onPress={handleExportData}>
                                     <Ionicons name="download-outline" size={16} color={colors.textSecondary} />
                                 </Pressable>
+                                <Pressable style={styles.miniButton} onPress={handleClearAttendance}>
+                                    <Ionicons name="trash-outline" size={16} color={colors.danger} />
+                                </Pressable>
                                 <Pressable style={styles.addButton} onPress={handleAddSubject}>
                                     <Ionicons name="add" size={20} color={colors.background} />
                                     <Text style={styles.addButtonText}>Add Subject</Text>
@@ -289,6 +315,7 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
                                 <TextInput
                                     style={styles.input}
                                     multiline
+                                    scrollEnabled
                                     value={subjectsJson}
                                     onChangeText={setSubjectsJson}
                                     autoCapitalize="none"
@@ -314,6 +341,7 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
                             <TextInput
                                 style={styles.input}
                                 multiline
+                                scrollEnabled
                                 value={attendanceJson}
                                 onChangeText={setAttendanceJson}
                                 editable={attendanceEditable}
@@ -389,6 +417,7 @@ export const ManageTimetableScreen = ({ navigation }: Props) => {
                                 <TextInput
                                     style={styles.input}
                                     multiline
+                                    scrollEnabled
                                     value={slotsJson}
                                     onChangeText={setSlotsJson}
                                     autoCapitalize="none"
@@ -587,7 +616,8 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     input: {
-        flex: 1,
+        minHeight: 200,
+        maxHeight: 400,
         backgroundColor: colors.surface,
         borderRadius: radii.md,
         padding: spacing.md,

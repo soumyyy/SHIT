@@ -34,6 +34,6 @@ export const Storage = {
   getSettings: () => read(STORAGE_KEYS.settings),
   saveSettings: (value: JsonValue) => write(STORAGE_KEYS.settings, value),
   clearAll: async () => {
-    await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+    await AsyncStorage.multiRemove([...Object.values(STORAGE_KEYS), 'hasLaunchedBefore']);
   },
 };

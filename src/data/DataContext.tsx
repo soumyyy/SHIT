@@ -1,5 +1,6 @@
 import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Alert, ActivityIndicator, View, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { colors, spacing } from "@/constants/theme";
 import { AttendanceLog, AttendanceStatus, Settings, SlotOverride, Subject, TimetableSlot } from "@/data/models";
@@ -66,29 +67,31 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [storedSubjects, storedSlots, storedAttendance, storedOverrides] = await Promise.all([
+      const [storedSubjects, storedSlots, storedAttendance, storedOverrides, hasLaunched] = await Promise.all([
         Storage.getSubjects(),
         Storage.getSlots(),
         Storage.getAttendanceLogs(),
         Storage.getSlotOverrides(),
+        AsyncStorage.getItem('hasLaunchedBefore'),
       ]);
 
-      const normalizedSubjects: Subject[] = storedSubjects ?? mockSubjects;
-      const normalizedSlots: TimetableSlot[] = storedSlots ?? mockSlots;
+      // Only use mock data on very first launch
+      const isFirstLaunch = !hasLaunched;
+
+      const normalizedSubjects: Subject[] = storedSubjects ?? (isFirstLaunch ? mockSubjects : []);
+      const normalizedSlots: TimetableSlot[] = storedSlots ?? (isFirstLaunch ? mockSlots : []);
       const normalizedAttendance: AttendanceLog[] = storedAttendance ?? [];
       const normalizedOverrides: SlotOverride[] = storedOverrides ?? [];
 
-      if (!storedSubjects) {
-        await Storage.saveSubjects(normalizedSubjects);
-      }
-      if (!storedSlots) {
-        await Storage.saveSlots(normalizedSlots);
-      }
-      if (!storedAttendance) {
-        await Storage.saveAttendanceLogs(normalizedAttendance);
-      }
-      if (!storedOverrides) {
-        await Storage.saveSlotOverrides(normalizedOverrides);
+      // Save data and mark as launched on first launch
+      if (isFirstLaunch) {
+        await Promise.all([
+          Storage.saveSubjects(normalizedSubjects),
+          Storage.saveSlots(normalizedSlots),
+          Storage.saveAttendanceLogs(normalizedAttendance),
+          Storage.saveSlotOverrides(normalizedOverrides),
+          AsyncStorage.setItem('hasLaunchedBefore', 'true'),
+        ]);
       }
 
       setSubjects(normalizedSubjects);
@@ -97,14 +100,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setSlotOverrides(normalizedOverrides);
     } catch (error) {
       console.error("Failed to load data:", error);
-      // If data is corrupted, reset to mock data
+      // If data is corrupted, reset to empty (not mock data)
       try {
-        await Storage.saveSubjects(mockSubjects);
-        await Storage.saveSlots(mockSlots);
+        await Storage.saveSubjects([]);
+        await Storage.saveSlots([]);
         await Storage.saveAttendanceLogs([]);
         await Storage.saveSlotOverrides([]);
-        setSubjects(mockSubjects);
-        setSlots(mockSlots);
+        setSubjects([]);
+        setSlots([]);
         setAttendanceLogs([]);
         setSlotOverrides([]);
       } catch (resetError) {

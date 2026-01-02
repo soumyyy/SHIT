@@ -46,3 +46,8 @@ export interface SlotOverride {
   room?: string;
   reason?: string;
 }
+
+export interface Holiday {
+  date: string; // YYYY-MM-DD
+  name?: string; // Optional holiday name/reason
+}

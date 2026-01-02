@@ -9,7 +9,7 @@ import { AttendanceModal } from "@/components/AttendanceModal";
 import { EditSlotModal } from "@/components/EditSlotModal";
 import { LectureCard } from "@/components/LectureCard";
 import { colors, layout, radii, spacing, typography } from "@/constants/theme";
-import { formatLocalDate, formatTimeRange, getDayLabel, getEffectiveSlots, getTodayDayOfWeek, hasReachedLectureLimit } from "@/data/helpers";
+import { formatLocalDate, formatTimeRange, getDayLabel, getEffectiveSlots, getTodayDayOfWeek, hasReachedLectureLimit, isHoliday } from "@/data/helpers";
 import { TimetableSlot } from "@/data/models";
 import { useData } from "@/data/DataContext";
 import { useTabSwipe } from "@/hooks/useTabSwipe";
@@ -28,7 +28,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const dayOfWeek = getTodayDayOfWeek(selectedDate);
-  const { slots, subjects, attendanceLogs, markAttendance, unmarkAttendance, settings, slotOverrides, addSlotOverride } = useData();
+  const { slots, subjects, attendanceLogs, markAttendance, unmarkAttendance, settings, slotOverrides, addSlotOverride, holidays, addHoliday, removeHoliday } = useData();
   const swipeHandlers = useTabSwipe(navigation, "TimetableTab");
 
   useEffect(() => {
@@ -58,6 +58,8 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
 
   // Calculate date string once for reuse
   const selectedDateString = formatLocalDate(selectedDate);
+  const isCurrentHoliday = isHoliday(selectedDateString, holidays);
+  const currentHolidayInfo = holidays.find(h => h.date === selectedDateString);
 
   // Check if selected date is before semester start
   const isBeforeSemester = selectedDateString < settings.semesterStartDate;
@@ -69,6 +71,11 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
 
   const todaysSlots = useMemo(
     () => {
+      // If today is a holiday, return empty array (no classes)
+      if (isHoliday(selectedDateString, holidays)) {
+        return [];
+      }
+
       const effectiveSlots = getEffectiveSlots(selectedDateString, slots, slotOverrides);
 
       // Filter out subjects that have reached their lecture limit
@@ -83,7 +90,7 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
         return !hasReached;
       });
     },
-    [selectedDateString, slots, slotOverrides, settings.semesterStartDate],
+    [selectedDateString, slots, slotOverrides, settings.semesterStartDate, holidays],
   );
 
   const daySpanHours = useMemo(() => {
@@ -219,6 +226,38 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
                 {isBeforeSemester ? 0 : daySpanHours} hour{(isBeforeSemester || daySpanHours !== 1) ? "s" : ""}
               </Text>
             </Pressable>
+            {!isBeforeSemester && (
+              <Pressable
+                style={[
+                  styles.navButton,
+                  isCurrentHoliday && styles.iconButtonActive,
+                ]}
+                onPress={() => {
+                  if (isCurrentHoliday) {
+                    removeHoliday(selectedDateString);
+                  } else {
+                    Alert.prompt(
+                      "Mark as Holiday",
+                      "Enter holiday name (optional)",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Mark",
+                          onPress: (name?: string) => addHoliday(selectedDateString, name || undefined),
+                        },
+                      ],
+                      "plain-text"
+                    );
+                  }
+                }}
+              >
+                <Ionicons
+                  name={isCurrentHoliday ? "calendar" : "calendar-outline"}
+                  size={16}
+                  color={isCurrentHoliday ? colors.background : colors.textSecondary}
+                />
+              </Pressable>
+            )}
             <Pressable style={styles.navButton} onPress={goToNextDay}>
               <Text style={styles.navButtonText}>→</Text>
             </Pressable>
@@ -266,7 +305,6 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Lectures</Text>
-          {/* <Text style={styles.sectionSubtitle}>Long press to mark attendance</Text> */}
         </View>
 
         {isBeforeSemester ? (
@@ -284,29 +322,38 @@ export const TimetableTodayScreen = ({ navigation }: Props) => {
               })()}
             </Text>
           </View>
+        ) : isCurrentHoliday ? (
+          <View style={styles.holidayMessage}>
+            <Text style={styles.holidayIcon}>🎉</Text>
+            <Text style={styles.holidayTitle}>Holiday</Text>
+            {currentHolidayInfo?.name && (
+              <Text style={styles.holidayName}>{currentHolidayInfo.name}</Text>
+            )}
+          </View>
         ) : todaysSlots.length === 0 ? (
           <Text style={styles.emptyText}>Enjoy the free day 🎉</Text>
         ) : (
-          todaysSlots.map((slot) => {
-            const subject = subjectsById.get(slot.subjectId);
-            const attendanceStatus = attendanceLogs.find(
-              (log) => log.slotId === slot.id && log.date === selectedDateString,
-            )?.status;
-            return (
-              <LectureCard
-                key={slot.id}
-                title={subject?.id ?? "Subject"}
-                subtitle={formatTimeRange(slot.startTime, slot.durationMinutes)}
-                room={slot.room}
-                status={attendanceStatus ?? null}
-                onPress={() =>
-                  navigation.navigate("SubjectOverview", { subjectId: slot.subjectId })
-                }
-                onLongPress={() => handleLongPress(slot)}
-                onDelete={attendanceStatus ? () => unmarkAttendance(slot.id, selectedDateString) : undefined}
-              />
-            );
-          })
+          <View>
+            {todaysSlots.map((slot) => {
+              const subject = subjectsById.get(slot.subjectId);
+              const attendanceStatus = attendanceLogs.find(
+                (log) => log.slotId === slot.id && log.date === selectedDateString,
+              )?.status;
+              return (
+                <LectureCard
+                  key={slot.id}
+                  title={subject?.id ?? "Subject"}
+                  subtitle={formatTimeRange(slot.startTime, slot.durationMinutes)}
+                  room={slot.room}
+                  status={attendanceStatus ?? null}
+                  onPress={() =>
+                    navigation.navigate("SubjectOverview", { subjectId: slot.subjectId })
+                  }
+                  onLongPress={() => handleLongPress(slot)}
+                />
+              );
+            })}
+          </View>
         )}
       </ScrollView>
       <AttendanceModal
@@ -442,8 +489,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.glassBorder,
   },
+  iconButtonActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
   sectionHeader: {
     marginBottom: spacing.md,
+  },
+  holidayToggleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.accent + "20",
+    borderRadius: radii.md,
+  },
+  holidayToggleButtonActive: {
+    backgroundColor: colors.accent,
+  },
+  holidayToggleText: {
+    color: colors.accent,
+    fontSize: typography.small,
+    fontWeight: "600",
+  },
+  holidayToggleTextActive: {
+    color: colors.background,
   },
   sectionTitle: {
     color: colors.textPrimary,
@@ -489,5 +560,50 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: typography.small,
     textAlign: "center",
+  },
+  holidayMessage: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  holidayIcon: {
+    fontSize: 48,
+  },
+  holidayTitle: {
+    fontSize: typography.heading,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  holidayName: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+  },
+  removeHolidayButton: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.danger + "20",
+    borderRadius: radii.md,
+  },
+  removeHolidayText: {
+    color: colors.danger,
+    fontWeight: "600",
+  },
+  markHolidayButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.accent + "20",
+    borderRadius: radii.md,
+    alignSelf: "center",
+  },
+  markHolidayText: {
+    color: colors.accent,
+    fontWeight: "600",
   },
 });

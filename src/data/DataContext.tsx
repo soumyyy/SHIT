@@ -3,7 +3,7 @@ import { Alert, ActivityIndicator, View, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { colors, spacing } from "@/constants/theme";
-import { AttendanceLog, AttendanceStatus, Settings, SlotOverride, Subject, TimetableSlot } from "@/data/models";
+import { AttendanceLog, AttendanceStatus, Holiday, Settings, SlotOverride, Subject, TimetableSlot } from "@/data/models";
 import { mockSlots, mockSubjects } from "@/data/mockData";
 import { Storage } from "@/storage/storage";
 import { formatLocalDate } from "./helpers";
@@ -35,6 +35,7 @@ interface DataContextValue {
   attendanceLogs: AttendanceLog[];
   settings: Settings;
   slotOverrides: SlotOverride[];
+  holidays: Holiday[];
   loading: boolean;
   markAttendance: (payload: MarkAttendancePayload) => Promise<void>;
   addSubject: (payload: AddSubjectPayload) => Promise<void>;
@@ -47,6 +48,8 @@ interface DataContextValue {
   updateSlot: (slot: TimetableSlot) => Promise<void>;
   deleteSlot: (id: string) => Promise<void>;
   unmarkAttendance: (slotId: string, date?: string) => Promise<void>;
+  addHoliday: (date: string, name?: string) => Promise<void>;
+  removeHoliday: (date: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -62,16 +65,18 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     minAttendanceThreshold: 0.8,
   });
   const [slotOverrides, setSlotOverrides] = useState<SlotOverride[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [storedSubjects, storedSlots, storedAttendance, storedOverrides, hasLaunched] = await Promise.all([
+      const [storedSubjects, storedSlots, storedAttendance, storedOverrides, storedHolidays, hasLaunched] = await Promise.all([
         Storage.getSubjects(),
         Storage.getSlots(),
         Storage.getAttendanceLogs(),
         Storage.getSlotOverrides(),
+        Storage.getHolidays(),
         AsyncStorage.getItem('hasLaunchedBefore'),
       ]);
 
@@ -82,6 +87,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       const normalizedSlots: TimetableSlot[] = storedSlots ?? (isFirstLaunch ? mockSlots : []);
       const normalizedAttendance: AttendanceLog[] = storedAttendance ?? [];
       const normalizedOverrides: SlotOverride[] = storedOverrides ?? [];
+      const normalizedHolidays: Holiday[] = storedHolidays ?? [];
 
       // Save data and mark as launched on first launch
       if (isFirstLaunch) {
@@ -98,6 +104,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       setSlots(normalizedSlots);
       setAttendanceLogs(normalizedAttendance);
       setSlotOverrides(normalizedOverrides);
+      setHolidays(normalizedHolidays);
     } catch (error) {
       console.error("Failed to load data:", error);
       // If data is corrupted, reset to empty (not mock data)
@@ -274,6 +281,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     await persistSlots(next);
   }, [persistSlots, slots]);
 
+  const addHoliday = useCallback(async (date: string, name?: string) => {
+    const newHoliday: Holiday = { date, name };
+    const next = [...holidays, newHoliday];
+    await Storage.saveHolidays(next);
+    setHolidays(next);
+  }, [holidays]);
+
+  const removeHoliday = useCallback(async (date: string) => {
+    const next = holidays.filter(h => h.date !== date);
+    await Storage.saveHolidays(next);
+    setHolidays(next);
+  }, [holidays]);
+
   const value = useMemo<DataContextValue>(
     () => ({
       subjects,
@@ -281,6 +301,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       attendanceLogs,
       settings,
       slotOverrides,
+      holidays,
       loading,
       markAttendance,
       addSubject,
@@ -293,9 +314,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       updateSlot,
       deleteSlot,
       unmarkAttendance,
+      addHoliday,
+      removeHoliday,
       refresh: load,
     }),
-    [subjects, slots, attendanceLogs, settings, slotOverrides, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load, updateSubject, deleteSubject, unmarkAttendance],
+    [subjects, slots, attendanceLogs, settings, slotOverrides, holidays, loading, markAttendance, addSubject, addSlot, updateSettings, addSlotOverride, importData, load, updateSubject, deleteSubject, updateSlot, deleteSlot, unmarkAttendance, addHoliday, removeHoliday],
   );
 
   if (loading) {

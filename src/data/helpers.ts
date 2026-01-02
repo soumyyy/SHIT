@@ -194,3 +194,10 @@ export const hasReachedLectureLimit = (
   const actual = countActualLectures(subjectId, slots, slotOverrides, semesterStartDate, currentDate);
   return actual >= limit;
 };
+
+/**
+ * Check if a date is a holiday
+ */
+export const isHoliday = (date: string, holidays: import("./models").Holiday[]): boolean => {
+  return holidays.some(h => h.date === date);
+};
